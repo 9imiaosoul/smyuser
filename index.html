@@ -379,6 +379,15 @@ tr:hover td{background:var(--s2)}
   .btn{min-height:38px}
   .ctab{padding:5px 10px}
 }
+
+  /* Mobile preview toggle button */
+  #mob-preview-toggle-wrap{display:none}
+  #mob-preview-section{display:none}
+  @media(max-width:768px){
+    #mob-preview-toggle-wrap{display:block!important}
+    .qleft{padding-bottom:16px!important}
+  }
+
 </style>
 </head>
 <body>
@@ -559,6 +568,28 @@ tr:hover td{background:var(--s2)}
         <span style="flex:1"><span style="font-size:12px;color:var(--dim)">加入運費 <span style="font-family:var(--mono);color:var(--text);font-weight:600">$305</span></span><br><span style="font-size:10px;color:var(--muted)">總金額滿6000免運費</span></span>
         <span id="shipping-status" style="font-size:10px;font-family:var(--mono)"></span>
       </label>
+    </div>
+
+    <!-- 手機預覽按鈕（桌面隱藏） -->
+    <div id="mob-preview-toggle-wrap" style="display:none">
+      <button id="mob-preview-toggle" onclick="toggleMobPreview()" 
+        style="width:100%;padding:13px;background:var(--gold);color:#090d13;border:none;border-radius:var(--r);font-size:15px;font-weight:700;font-family:var(--sans);cursor:pointer;letter-spacing:.5px">
+        👁&nbsp;&nbsp;預覽報價單
+      </button>
+    </div>
+
+    <!-- 手機預覽卡片區（桌面隱藏） -->
+    <div id="mob-preview-section" style="display:none">
+      <div id="mob-quote-card-inner" style="width:100%"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn" onclick="cpQuote()" style="flex:1;font-size:13px;font-weight:600;padding:10px">📋 複製文字</button>
+        <button class="btn" onclick="doExportPNG()" style="font-size:12px;padding:10px">🖼 PNG</button>
+        <button class="btn" onclick="doExportPDF()" style="font-size:12px;padding:10px">📄 PDF</button>
+      </div>
+      <button onclick="toggleMobPreview()" 
+        style="width:100%;margin-top:8px;padding:10px;background:none;border:1px solid var(--border);color:var(--dim);border-radius:var(--r);font-size:13px;cursor:pointer;font-family:var(--sans)">
+        ▲ 收起預覽
+      </button>
     </div>
 
   </div>
@@ -1657,6 +1688,34 @@ function clearArrival(){
   renderQPreview();
 }
 // ══════════════════════════════════════════════════════════
+
+function toggleMobPreview(){
+  const section = document.getElementById('mob-preview-section');
+  const btn = document.getElementById('mob-preview-toggle');
+  const wrap = document.getElementById('mob-quote-card-inner');
+  if(!section) return;
+  const isOpen = section.style.display !== 'none';
+  if(isOpen){
+    section.style.display = 'none';
+    if(btn) btn.textContent = '👁\u00A0\u00A0預覽報價單';
+  } else {
+    // Clone & render quote card
+    renderQPreview();
+    const src = document.getElementById('quote-card');
+    if(src && wrap){
+      const cl = src.cloneNode(true);
+      cl.removeAttribute('id');
+      cl.style.width = '100%';
+      wrap.innerHTML = '';
+      wrap.appendChild(cl);
+    }
+    section.style.display = 'block';
+    if(btn) btn.textContent = '▲ 收起預覽';
+    // Scroll to preview
+    setTimeout(()=>section.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+  }
+}
+
 // ── TOAST ────────────────────────────────────────────────────
 function toast(msg){
   const el=document.getElementById('toast');
@@ -1687,8 +1746,10 @@ function applyMob(){
   const on=isMob();
   const b=document.getElementById('mob-cust-block');
   const f=document.getElementById('mob-fab');
+  const tw=document.getElementById('mob-preview-toggle-wrap');
   if(b)b.style.display=on?'flex':'none';
   if(f)f.style.display=on?'flex':'none';
+  if(tw)tw.style.display=on?'block':'none';
 }
 function syncMob(el,id){
   const t=document.getElementById(id);
