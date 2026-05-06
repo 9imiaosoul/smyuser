@@ -337,24 +337,33 @@ tr:hover td{background:var(--s2)}
   /* Tab 1 Quote */
   #tab-quote{display:none}
   #tab-quote.active{display:block!important;height:auto!important}
-  .qleft{display:flex;flex-direction:column;gap:12px;padding:12px;padding-bottom:calc(88px + env(safe-area-inset-bottom));overflow:visible;border-right:none;background:var(--s1)}
+  .qleft{display:flex;flex-direction:column;gap:12px;padding:12px;padding-bottom:16px;overflow:visible;border-right:none;background:var(--s1);width:100%;box-sizing:border-box;max-width:100vw}
   .qright,.qbar{display:none!important}
   /* Mobile customer block */
-  #mob-cust-block{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px;flex-direction:column;gap:8px}
-  .mf{display:flex;align-items:center;gap:8px}
-  .mflbl{font-size:9px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;width:32px;flex-shrink:0}
-  .mf input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:7px 9px;font-family:var(--sans);outline:none}
+  #mob-cust-block{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px;flex-direction:column;gap:8px;width:100%;box-sizing:border-box}
+  .mf{display:flex;align-items:center;gap:8px;width:100%;min-width:0}
+  .mflbl{font-size:9px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;width:30px;min-width:30px;flex-shrink:0}
+  .mf input{flex:1;min-width:0;width:0;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:7px 9px;font-family:var(--sans);outline:none;box-sizing:border-box}
   .mf input:focus{border-color:var(--gold)}
-  #mob-arr-chip{display:flex;align-items:center;gap:6px;flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:7px 9px;cursor:pointer}
-  #mob-arr-chip span:first-child{flex:1;font-size:13px;color:var(--dim)}
+  #mob-arr-chip{display:flex;align-items:center;gap:6px;flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:7px 9px;cursor:pointer;overflow:hidden}
+  #mob-arr-chip span:first-child{flex:1;min-width:0;font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   /* Calendar: centered modal on mobile */
   #cal-popover{position:fixed!important;top:50%!important;left:50%!important;right:auto!important;transform:translate(-50%,-50%)!important;max-width:calc(100vw - 32px)!important;z-index:600!important}
-  /* prevent iOS input zoom */
-  select,input,textarea{font-size:16px!important}
+  /* Prevent iOS input zoom */
+  select,input,textarea{font-size:16px!important;box-sizing:border-box}
+  /* Form rows wrap on small screens */
+  .card>div[style*="display:flex;gap:7px"]{flex-wrap:wrap}
+  [style*="width:80px"],[style*="width:86px"],[style*="width:72px"],[style*="width:68px"]{
+    min-width:0;flex:1 1 60px;
+  }
   #qprodsel{padding:9px}
+  /* General width constraints */
+  .card,.irow,.prod-list,.price-mode-bar{width:100%;box-sizing:border-box;max-width:100%}
+  .cat-tabs{flex-wrap:wrap}
   /* Items */
-  .irow{padding:8px}
-  .idetail{font-size:10px;max-width:110px;white-space:normal;word-break:break-word}
+  .irow{padding:8px;min-width:0}
+  .idetail{font-size:10px;white-space:normal;word-break:break-word;flex:1;min-width:0;overflow-wrap:anywhere}
+  .iname{min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:120px}
   /* Preview FAB */
   #mob-fab{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));right:16px;z-index:200;display:none;align-items:center;gap:6px;background:var(--gold);color:#090d13;border:none;border-radius:999px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--sans);cursor:pointer;box-shadow:0 4px 24px rgba(201,168,76,.45)}
   /* Preview overlay */
@@ -385,7 +394,13 @@ tr:hover td{background:var(--s2)}
   #mob-preview-section{display:none}
   @media(max-width:768px){
     #mob-preview-toggle-wrap{display:block!important}
-    .qleft{padding-bottom:16px!important}
+    #mob-preview-section{width:100%;box-sizing:border-box}
+    #mob-preview-section #quote-card,
+    #mob-quote-card-inner>div{width:100%!important;max-width:100%!important}
+    /* Topbar on mobile */
+    #topbar{overflow:hidden}
+    /* Shell full width */
+    #shell,#content{width:100%;max-width:100vw;overflow-x:hidden}
   }
 
 </style>
