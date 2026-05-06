@@ -569,25 +569,6 @@ tr:hover td{background:var(--s2)}
     <div id="quote-card"></div>
   </div>
 
-  <!-- Mobile Preview Overlay -->
-  <div id="mob-ov">
-    <div class="mob-ov-hd">
-      <strong>報價預覽</strong>
-      <button onclick="closeMobPreview()">✕ 關閉</button>
-    </div>
-    <div id="mob-card-wrap"></div>
-    <div class="mob-ov-bar">
-      <button class="btn" onclick="cpQuote()" style="flex:1;font-size:13px;font-weight:600">📋 複製文字</button>
-      <button class="btn" onclick="doExportPNG()" style="font-size:12px">🖼 PNG</button>
-      <button class="btn" onclick="doExportPDF()" style="font-size:12px">📄 PDF</button>
-    </div>
-  </div>
-
-  <!-- Mobile Preview FAB -->
-  <!-- Mobile FAB -->
-  <button id="mob-fab" onclick="openMobPreview()">👁&nbsp;預覽報價單</button>
-
-
 </div><!-- #content -->
 </div><!-- #shell -->
 
@@ -813,6 +794,7 @@ initQ(); renderCatSel(); renderDB(); renderImpLog(); renderQPreview();
 function showTab(t){
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['quote','db','import'][i]===t));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+t));
+  setTimeout(applyMob,10);
   if(t==='db'){renderDB();renderCatSel();}
   if(t==='import')renderImpLog();
 }
@@ -1741,5 +1723,26 @@ function closeMobPreview(){
 window.addEventListener('resize',applyMob);
 setTimeout(applyMob,80);
 </script>
+
+  <!-- Mobile Preview Overlay -->
+  <div id="mob-ov">
+    <div class="mob-ov-hd">
+      <strong>報價預覽</strong>
+      <button onclick="closeMobPreview()">✕ 關閉</button>
+    </div>
+    <div id="mob-card-wrap"></div>
+    <div class="mob-ov-bar">
+      <button class="btn" onclick="cpQuote()" style="flex:1;font-size:13px;font-weight:600">📋 複製文字</button>
+      <button class="btn" onclick="doExportPNG()" style="font-size:12px">🖼 PNG</button>
+      <button class="btn" onclick="doExportPDF()" style="font-size:12px">📄 PDF</button>
+    </div>
+  </div>
+
+  <!-- Mobile Preview FAB -->
+  <!-- Mobile FAB -->
+  <button id="mob-fab" onclick="openMobPreview()">👁&nbsp;預覽報價單</button>
+
+
+
 </body>
 </html>
