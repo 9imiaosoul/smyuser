@@ -2,8 +2,13 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>新懋宇 報價系統</title>
+<meta name="theme-color" content="#0f1520">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="報價系統">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -311,6 +316,69 @@ tr:hover td{background:var(--s2)}
 /* ── TOAST ── */
 #toast{position:fixed;bottom:64px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--s1);border:1px solid var(--gold);color:var(--gold);font-family:var(--mono);font-size:11px;letter-spacing:.5px;padding:5px 18px;border-radius:999px;opacity:0;transition:all .22s;pointer-events:none;z-index:300}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ════════════════════════════════
+/* ════════════════════════════════════════
+   MOBILE  ≤ 768px
+════════════════════════════════════════ */
+@media(max-width:768px){
+  html,body{overflow:auto;height:auto}
+  #shell{height:auto;min-height:100dvh;overflow:visible}
+  #topbar{height:auto;min-height:48px;padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));flex-wrap:wrap;gap:6px;position:sticky;top:0;z-index:50}
+  /* hide customer/arrival fields from topbar on mobile */
+  #topbar>div[style*="margin-left:auto"]{display:none!important}
+  #topbar>div[id="arrival-wrapper"]{display:none!important}
+  .brand-toggle{margin-left:auto}
+  #tabs{padding:0 8px;height:40px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-shrink:0;position:sticky;top:48px;z-index:40;background:var(--s1)}
+  .tab-btn{padding:0 12px;font-size:12px;white-space:nowrap}
+  #content{overflow:visible;flex:1}
+  .tab-panel{display:none;width:100%;height:auto}
+  .tab-panel.active{display:block}
+  /* Tab 1 Quote */
+  #tab-quote{display:none}
+  #tab-quote.active{display:block!important;height:auto!important}
+  .qleft{display:flex;flex-direction:column;gap:12px;padding:12px;padding-bottom:calc(88px + env(safe-area-inset-bottom));overflow:visible;border-right:none;background:var(--s1)}
+  .qright,.qbar{display:none!important}
+  /* Mobile customer block */
+  #mob-cust-block{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px;flex-direction:column;gap:8px}
+  .mf{display:flex;align-items:center;gap:8px}
+  .mflbl{font-size:9px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;width:32px;flex-shrink:0}
+  .mf input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:7px 9px;font-family:var(--sans);outline:none}
+  .mf input:focus{border-color:var(--gold)}
+  #mob-arr-chip{display:flex;align-items:center;gap:6px;flex:1;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:7px 9px;cursor:pointer}
+  #mob-arr-chip span:first-child{flex:1;font-size:13px;color:var(--dim)}
+  /* Calendar: centered modal on mobile */
+  #cal-popover{position:fixed!important;top:50%!important;left:50%!important;right:auto!important;transform:translate(-50%,-50%)!important;max-width:calc(100vw - 32px)!important;z-index:600!important}
+  /* prevent iOS input zoom */
+  select,input,textarea{font-size:16px!important}
+  #qprodsel{padding:9px}
+  /* Items */
+  .irow{padding:8px}
+  .idetail{font-size:10px;max-width:110px;white-space:normal;word-break:break-word}
+  /* Preview FAB */
+  #mob-fab{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));right:16px;z-index:200;display:none;align-items:center;gap:6px;background:var(--gold);color:#090d13;border:none;border-radius:999px;padding:13px 22px;font-size:14px;font-weight:700;font-family:var(--sans);cursor:pointer;box-shadow:0 4px 24px rgba(201,168,76,.45)}
+  /* Preview overlay */
+  #mob-ov{display:none;position:fixed;inset:0;z-index:300;background:var(--bg);flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  #mob-ov.on{display:flex}
+  .mob-ov-hd{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));background:var(--s1);border-bottom:1px solid var(--border)}
+  .mob-ov-hd strong{font-size:14px}
+  .mob-ov-hd button{background:none;border:1px solid var(--border);color:var(--dim);border-radius:4px;padding:5px 14px;font-size:12px;cursor:pointer}
+  #mob-card-wrap{flex:1;padding:14px 12px;padding-bottom:calc(80px + env(safe-area-inset-bottom));display:flex;justify-content:center;align-items:flex-start}
+  #mob-card-wrap>div{width:100%;max-width:460px}
+  .mob-ov-bar{position:sticky;bottom:0;display:flex;gap:6px;padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--s1);border-top:1px solid var(--border)}
+  /* Tab 2 DB */
+  #tab-db.active{display:flex;flex-direction:column;height:auto;min-height:60vh}
+  .dbtoolbar{flex-wrap:wrap;gap:6px;padding:8px 10px}
+  .dbtablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:560px}
+  th,td{padding:5px 7px;font-size:11px}
+  /* Tab 3 Import */
+  #tab-import.active{display:flex!important;flex-direction:column;height:auto}
+  .imgleft{border-right:none;border-bottom:1px solid var(--border)}
+  /* Touch */
+  .btn{min-height:38px}
+  .ctab{padding:5px 10px}
+}
 </style>
 </head>
 <body>
@@ -417,6 +485,17 @@ tr:hover td{background:var(--s2)}
 <div class="tab-panel active" id="tab-quote">
   <div class="qleft">
 
+    <!-- Mobile Customer Info Panel (hidden on desktop) -->
+    <!-- 手機客戶資料 (hidden on desktop via CSS) -->
+    <div id="mob-cust-block" style="display:none">
+      <div class="stitle">客戶資料 &amp; 到貨日</div>
+      <div class="mf"><span class="mflbl">客戶</span><input type="text" placeholder="客戶名稱" oninput="syncMob(this,'customer-name')"></div>
+      <div class="mf"><span class="mflbl">統編</span><input type="text" placeholder="統一編號" oninput="syncMob(this,'customer-tax-id')"></div>
+      <div class="mf"><span class="mflbl">電話</span><input type="tel" placeholder="聯絡電話" oninput="syncMob(this,'customer-phone')"></div>
+      <div class="mf"><span class="mflbl">地址</span><input type="text" placeholder="收件地址" oninput="syncMob(this,'customer-addr')"></div>
+      <div class="mf"><span class="mflbl">到貨</span><div id="mob-arr-chip" onclick="toggleCalendar()"><span id="mob-arr-disp">希望到貨日　點擊選擇</span><span style="font-size:10px;color:var(--muted)">▾</span></div></div>
+    </div>
+
     <!-- 品項搜尋 -->
     <div>
       <div class="stitle">選擇品項</div>
@@ -484,99 +563,30 @@ tr:hover td{background:var(--s2)}
 
   </div>
 
-  <!-- RIGHT: Preview -->
+  <!-- RIGHT: Preview (desktop) -->
   <div class="qright">
     <div class="plabel">預覽</div>
     <div id="quote-card"></div>
   </div>
 
-  <!-- BOTTOM BAR -->
-  <div class="qbar">
-    <div class="qbar-total">合計 <span id="qtotal">$0</span></div>
-    <button class="btn" onclick="cpQuote()">複製文字</button>
-    <button class="btn" onclick="doExportPNG()">下載 PNG</button>
-    <button class="btn" onclick="doExportPDF()">下載 PDF</button>
-    <button class="btn btn-gold" id="qmainbtn" onclick="cpQuote()">複製報價單</button>
+  <!-- Mobile Preview Overlay -->
+  <div id="mob-ov">
+    <div class="mob-ov-hd">
+      <strong>報價預覽</strong>
+      <button onclick="closeMobPreview()">✕ 關閉</button>
+    </div>
+    <div id="mob-card-wrap"></div>
+    <div class="mob-ov-bar">
+      <button class="btn" onclick="cpQuote()" style="flex:1;font-size:13px;font-weight:600">📋 複製文字</button>
+      <button class="btn" onclick="doExportPNG()" style="font-size:12px">🖼 PNG</button>
+      <button class="btn" onclick="doExportPDF()" style="font-size:12px">📄 PDF</button>
+    </div>
   </div>
-</div>
 
-<!-- ── TAB 2: 商品資料庫 ── -->
-<div class="tab-panel" id="tab-db">
-  <div class="dbtoolbar">
-    <input type="text" class="dbsearch" id="dbsearch" placeholder="搜尋品名…" oninput="renderDB()">
-    <select class="dbcatsel" id="dbcatsel" onchange="renderDB()">
-      <option value="">所有類別</option>
-    </select>
-    <button class="btn btn-green" onclick="addProdUI()" style="font-size:11px">＋ 新增</button>
-    <button class="btn btn-danger" onclick="resetDB()" style="font-size:11px;margin-left:auto">重置資料庫</button>
-    <div class="dbstats" id="dbstats"></div>
-  </div>
-  <div class="dbtablewrap">
-    <table>
-      <thead><tr>
-        <th>品名</th><th>類別</th><th>單位</th><th>規格</th>
-        <th>參考重量</th><th>現價</th><th>上次更新</th><th>歷史</th><th>操作</th>
-      </tr></thead>
-      <tbody id="dbtbody"></tbody>
-    </table>
-  </div>
-</div>
+  <!-- Mobile Preview FAB -->
+  <!-- Mobile FAB -->
+  <button id="mob-fab" onclick="openMobPreview()">👁&nbsp;預覽報價單</button>
 
-<!-- ── TAB 3: 匯入報價單 ── -->
-<div class="tab-panel" id="tab-import">
-  <div class="imgleft">
-    <div>
-      <div class="stitle">上傳報價單圖片</div>
-      <div class="upload-zone" id="dropzone">
-        <input type="file" accept="image/*" id="imgfile" onchange="onFileSelect(event)">
-        <div class="upload-ico">📄</div>
-        <div class="upload-txt">點擊或拖曳圖片到這裡</div>
-        <div class="upload-sub">支援 JPG · PNG · WEBP · 可直接 Ctrl+V 貼上截圖</div>
-      </div>
-      <img id="imgpreview" class="img-preview" alt="preview">
-    </div>
-    <div>
-      <div class="stitle">Anthropic API Key</div>
-      <div class="card" style="display:flex;flex-direction:column;gap:8px">
-        <div class="apikey-row">
-          <div style="flex:1">
-            <label>API Key（僅儲存本機，不外傳）</label>
-            <input type="password" id="apikey" placeholder="sk-ant-…" oninput="saveApiKey()">
-          </div>
-          <button class="btn" onclick="toggleKeyVis()" style="flex-shrink:0;align-self:flex-end">👁</button>
-        </div>
-        <div style="font-size:10px;color:var(--muted)">前往 <span style="color:var(--gold);font-family:var(--mono)">console.anthropic.com</span> 取得 API Key</div>
-      </div>
-    </div>
-    <div>
-      <div class="stitle">報價日期</div>
-      <input type="date" id="impdate">
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-gold" id="aibtn" onclick="runAI()" style="flex:1">AI 解析圖片</button>
-      <button class="btn" onclick="clearImport()">清除</button>
-    </div>
-    <div class="ai-status" id="aistatus"></div>
-    <div>
-      <div class="stitle">手動貼上（Tab 分隔）</div>
-      <textarea id="imptext" style="height:110px;font-family:var(--mono);font-size:11px;resize:none" placeholder="品名&#9;單位&#9;規格&#9;時價&#9;備註" oninput="parseImp()"></textarea>
-    </div>
-    <div id="impresult"></div>
-    <button class="btn btn-green" id="impconfirm" onclick="confirmImp()" style="width:100%" disabled>確認匯入</button>
-    <div>
-      <div class="stitle">匯入記錄</div>
-      <div class="implog" id="implog">
-        <div style="text-align:center;padding:12px;color:var(--muted);font-size:11px;font-family:var(--mono)">尚無記錄</div>
-      </div>
-    </div>
-  </div>
-  <div class="imgright">
-    <div class="stitle">解析預覽</div>
-    <div id="imppreview">
-      <div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:11px;font-family:var(--mono)">上傳圖片並執行 AI 解析後<br>將在此顯示結果</div>
-    </div>
-  </div>
-</div>
 
 </div><!-- #content -->
 </div><!-- #shell -->
@@ -756,7 +766,7 @@ let parsedRows=[], toastT=null, uploadedImg=null;
 const now=new Date();
 const TODAY=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 const TODAY_D=TODAY.replace(/-/g,'/');
-document.getElementById('tdchip').textContent=TODAY_D;
+const tdch=document.getElementById('tdchip');if(tdch)tdch.textContent=TODAY_D;
 
 // ══ STORAGE ═════════════════════════════════════════════════
 function loadDB(){try{const r=localStorage.getItem('smy_qdb6');if(r){db=JSON.parse(r);return;}}catch(e){}db=JSON.parse(JSON.stringify(SEED));saveDB();}
@@ -795,7 +805,7 @@ loadDB();
 setTimeout(()=>{
   const k=localStorage.getItem('smy_apikey');
   if(k)document.getElementById('apikey').value=k;
-  document.getElementById('impdate').value=TODAY;
+  const idd=document.getElementById('impdate');if(idd)idd.value=TODAY;
 },0);
 initQ(); renderCatSel(); renderDB(); renderImpLog(); renderQPreview();
 
@@ -826,7 +836,7 @@ function setPriceMode(m){
   btns[1].className='pm-btn'+(m==='biz'?' on-biz':'');
   btns[2].className='pm-btn'+(m==='retail'?' on-retail':'');
   const hints={orig:'顯示原始進貨價',biz:'業務價 = 原價 × 1.05（含稅，四捨五入）',retail:'零售含稅 = 原價 × 1.15 × 1.05（個位數 0–4 捨、5–9 進）'};
-  document.getElementById('pm-hint').textContent=hints[m];
+  const pmh=document.getElementById('pm-hint');if(pmh)pmh.textContent=hints[m];
   renderQItems(); renderQPreview();
 }
 
@@ -837,7 +847,8 @@ function initQ(){buildQCats();renderProds();}
 
 function buildQCats(){
   const all=['全部',...cats()];
-  document.getElementById('qcats').innerHTML=all.map(c=>{
+  const qcEl=document.getElementById('qcats');if(!qcEl)return;
+  qcEl.innerHTML=all.map(c=>{
     const on=(c==='全部'&&!qCat)||(c===qCat);
     const acc=BRANDS[brand].acc;
     return `<button class="ctab${on?' on':''}${on&&acc==='cat'?' cat':''}" onclick="setQCat('${c}')">${c}</button>`;
@@ -880,8 +891,8 @@ function selPFromDrop(){
 function applySelDrop(){
   if(!selProd)return;
   const c=cur(selProd);
-  document.getElementById('qprice').value=c.p||0;
-  document.getElementById('qweight').value='';
+  const qp=document.getElementById('qprice');if(qp)qp.value=c.p||0;
+  const qw=document.getElementById('qweight');if(qw)qw.value='';
   const usel=document.getElementById('qunit');
   const opts=[...usel.options].map(o=>o.value);
   if(opts.includes(selProd.unit))usel.value=selProd.unit;
@@ -994,8 +1005,8 @@ function renderQItems(){
   const container=document.getElementById('qitems');
   if(!qItems.length){
     container.innerHTML='<div style="text-align:center;padding:18px;color:var(--muted);font-size:11px;border:1px dashed var(--border);border-radius:var(--r);font-family:var(--mono)">尚未加入任何品項</div>';
-    document.getElementById('qtotal').textContent='$0';
-    document.getElementById('qcnt').textContent='0 項';
+    const qt0=document.getElementById('qtotal');if(qt0)qt0.textContent='$0';
+    const qc0=document.getElementById('qcnt');if(qc0)qc0.textContent='0 項';
     return;
   }
   let rows='';
@@ -1035,12 +1046,12 @@ function renderQItems(){
     </div>`;
   });
   container.innerHTML=rows;
-  document.getElementById('qcnt').textContent=qItems.length+' 項';
+  const qcn=document.getElementById('qcnt');if(qcn)qcn.textContent=qItems.length+' 項';
   const shippingState=getShippingState();
   const shippingAmt=(shippingState==='added')?305:0;
   const finalTotal=displayTotal+shippingAmt;
   const ts=document.getElementById('qtotal');
-  ts.textContent='$'+finalTotal.toLocaleString();
+  if(ts)ts.textContent='$'+finalTotal.toLocaleString();
   ts.className=mc;
 }
 
@@ -1167,7 +1178,9 @@ function renderQPreview(){
     ? `<div style="text-align:right;min-width:150px;max-width:210px;flex-shrink:0">${custLines.join('')}</div>`
     : '';
 
-  document.getElementById('quote-card').innerHTML=`
+  const qcard=document.getElementById('quote-card');
+  if(!qcard)return;
+  qcard.innerHTML=`
     <div class="qc-stripe ${acc}"></div>
     <div class="qc-head">
       <div style="font-size:11px;color:#a09880;font-family:'Space Mono',monospace;letter-spacing:1px;margin-bottom:6px">訂購日期　${TODAY_D}${modeTagHtml?'&nbsp;&nbsp;&nbsp;'+modeTagHtml:''}</div>
@@ -1302,7 +1315,7 @@ async function doExportPDF(){
 // TAB 2 — 商品資料庫
 // ══════════════════════════════════════════════════════════════
 function renderCatSel(){
-  document.getElementById('dbcatsel').innerHTML=`<option value="">所有類別</option>`+cats().map(c=>`<option>${c}</option>`).join('');
+  const dbcs=document.getElementById('dbcatsel');if(dbcs)dbcs.innerHTML=`<option value="">所有類別</option>`+cats().map(c=>`<option>${c}</option>`).join('');
 }
 function renderDB(){
   const s=(document.getElementById('dbsearch')||{}).value||'';
@@ -1311,8 +1324,9 @@ function renderDB(){
   let pr=db.products;
   if(cf)pr=pr.filter(p=>p.cat===cf);
   if(s)pr=pr.filter(p=>p.name.includes(s));
-  document.getElementById('dbstats').textContent=`${pr.length} / ${db.products.length}`;
-  document.getElementById('dbtbody').innerHTML=pr.map(p=>{
+  const dbs=document.getElementById('dbstats');if(dbs)dbs.textContent=`${pr.length} / ${db.products.length}`;
+  const dbtb=document.getElementById('dbtbody');if(!dbtb)return;
+  dbtb.innerHTML=pr.map(p=>{
     const c=cur(p);
     const ps=c.p!=null?'$'+c.p.toLocaleString():'時價';
     const isMkt=c.p==null;
@@ -1336,9 +1350,10 @@ function renderDB(){
 }
 function showHist(id){
   const p=db.products.find(x=>x.id===id);if(!p)return;
-  document.getElementById('htitle').textContent=p.name+' — 價格歷史';
+  const ht=document.getElementById('htitle');if(ht)ht.textContent=p.name+' — 價格歷史';
   const sorted=[...p.h].sort((a,b)=>b.d.localeCompare(a.d));
-  document.getElementById('hbody').innerHTML=sorted.map((h,i)=>{
+  const hb=document.getElementById('hbody');if(!hb)return;
+  hb.innerHTML=sorted.map((h,i)=>{
     const isNew=i===0;
     let dh='';
     if(i<sorted.length-1&&h.p!=null&&sorted[i+1].p!=null){const d=h.p-sorted[i+1].p;if(d>0)dh=`<span class="pchange pup">▲${d}</span>`;else if(d<0)dh=`<span class="pchange pdn">▼${Math.abs(d)}</span>`;}
@@ -1357,16 +1372,16 @@ function openEditModal(id){
   editingId=id||null;
   const p=id?db.products.find(x=>x.id===id):null;
   const c=p?cur(p):{d:TODAY,p:null,n:''};
-  document.getElementById('edit-title').textContent=p?'編輯品項':'新增品項';
+  const etl=document.getElementById('edit-title');if(etl)etl.textContent=p?'編輯品項':'新增品項';
   document.getElementById('ef-name').value=p?p.name:'';
-  document.getElementById('ef-cat').value=p?p.cat:'冰鮮';
+  const efcat=document.getElementById('ef-cat');if(efcat)efcat.value=p?p.cat:'冰鮮';
   const usel=document.getElementById('ef-unit');
   const uval=p?p.unit:'KG';
   [...usel.options].forEach(o=>o.selected=o.value===uval);
-  document.getElementById('ef-spec').value=p?(p.spec||''):'';
-  document.getElementById('ef-refwt').value=p?(p.refWeight||''):'';
-  document.getElementById('ef-price').value=c.p!=null?c.p:'';
-  document.getElementById('ef-note').value=c.n||'';
+  const efspec=document.getElementById('ef-spec');if(efspec)efspec.value=p?(p.spec||''):'';
+  const efrw=document.getElementById('ef-refwt');if(efrw)efrw.value=p?(p.refWeight||''):'';
+  const efpr=document.getElementById('ef-price');if(efpr)efpr.value=c.p!=null?c.p:'';
+  const efno=document.getElementById('ef-note');if(efno)efno.value=c.n||'';
   document.getElementById('edit-modal').classList.add('on');
   setTimeout(()=>document.getElementById('ef-name').focus(),80);
 }
@@ -1476,8 +1491,8 @@ DATE\t2025-04-30
       if(cols[0].toUpperCase()==='DATE'&&cols[1])dateFound=cols[1].trim();
       else if(l.trim())dataLines.push(l);
     });
-    if(dateFound)document.getElementById('impdate').value=dateFound;
-    document.getElementById('imptext').value=dataLines.join('\n');
+    if(dateFound){const idd2=document.getElementById('impdate');if(idd2)idd2.value=dateFound;}
+    const ittv=document.getElementById('imptext');if(ittv)ittv.value=dataLines.join('\n');
     setStatus('ok',`解析完成，共 ${dataLines.length} 筆`);
     parseImp();
   }catch(e){
@@ -1490,7 +1505,7 @@ function parseImp(){
   const raw=document.getElementById('imptext').value.trim();
   parsedRows=[];
   if(!raw){
-    document.getElementById('imppreview').innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:11px;font-family:var(--mono)">尚無解析資料</div>';
+    const iprev2=document.getElementById('imppreview');if(iprev2)iprev2.innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:11px;font-family:var(--mono)">尚無解析資料</div>';
     document.getElementById('impconfirm').disabled=true;
     return;
   }
@@ -1511,7 +1526,7 @@ function parseImp(){
   const newC=parsedRows.filter(r=>r.status==='new').length;
   const updC=parsedRows.filter(r=>r.status==='update').length;
   const skipC=parsedRows.filter(r=>r.status==='skip').length;
-  document.getElementById('imppreview').innerHTML=`
+  const iprev=document.getElementById('imppreview');if(iprev)iprev.innerHTML=`
     <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
       <span class="badge bg-green">新增 ${newC}</span>
       <span class="badge bg-blue">更新 ${updC}</span>
@@ -1544,7 +1559,7 @@ function confirmImp(){
   toast(`匯入完成：新增 ${newC}，更新 ${updC}`);
 }
 function clearImport(){
-  document.getElementById('imptext').value='';
+  const itv2=document.getElementById('imptext');if(itv2)itv2.value='';
   parsedRows=[];uploadedImg=null;
   const pr=document.getElementById('imgpreview');pr.src='';pr.classList.remove('on');
   document.getElementById('imppreview').innerHTML='<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:11px;font-family:var(--mono)">尚無解析資料</div>';
@@ -1591,11 +1606,13 @@ function calNextMonth(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} rend
 
 function renderCalMonth(){
   const mn=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  document.getElementById('cal-month-label').textContent=calYear+' 年 '+mn[calMonth];
+  const cml=document.getElementById('cal-month-label');
+  if(cml)cml.textContent=calYear+' 年 '+mn[calMonth];
   const firstDay=new Date(calYear,calMonth,1).getDay();
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
   const todayD=new Date(); todayD.setHours(0,0,0,0);
   const grid=document.getElementById('cal-days');
+  if(!grid)return;
   grid.innerHTML='';
   for(let i=0;i<firstDay;i++){
     const blank=document.createElement('div'); grid.appendChild(blank);
@@ -1641,27 +1658,88 @@ function confirmArrival(){
   const timeVal = document.getElementById('cal-time').value;
   const timeStr = timeVal ? ' 到貨時間' + timeVal : '';
   window._arrivalText = `${m}/${d}（${dow}）${timeStr}`;
-  document.getElementById('arrival-display').textContent = '希望到貨日　' + window._arrivalText;
-  document.getElementById('arrival-display').style.color = 'var(--gold)';
-  document.getElementById('cal-popover').style.display = 'none';
+  const ad=document.getElementById('arrival-display');
+  if(ad){ad.textContent='希望到貨日　'+window._arrivalText;ad.style.color='var(--gold)';}
+  const cp=document.getElementById('cal-popover');
+  if(cp)cp.style.display='none';
   renderQPreview();
 }
 
 function clearArrival(){
   calSelectedDate = null;
   window._arrivalText = '';
-  document.getElementById('arrival-display').textContent = '希望到貨日　點擊選擇';
-  document.getElementById('arrival-display').style.color = 'var(--dim)';
-  document.getElementById('cal-popover').style.display = 'none';
+  const ad2=document.getElementById('arrival-display');
+  if(ad2){ad2.textContent='希望到貨日　點擊選擇';ad2.style.color='var(--dim)';}
+  const cp2=document.getElementById('cal-popover');
+  if(cp2)cp2.style.display='none';
   renderQPreview();
 }
 // ══════════════════════════════════════════════════════════
 // ── TOAST ────────────────────────────────────────────────────
 function toast(msg){
   const el=document.getElementById('toast');
-  el.textContent=msg;el.classList.add('on');
+  if(!el)return;el.textContent=msg;el.classList.add('on');
   clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),2200);
 }
+
+// ══ PWA MANIFEST ══════════════════════════════════════════
+(function(){
+  try{
+    const m={name:'新懋宇報價系統',short_name:'報價系統',start_url:'./',display:'standalone',background_color:'#0f1520',theme_color:'#0f1520',icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%230f1520'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle'%3E🐟%3C/text%3E%3C/svg%3E",sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+    const b=new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
+    const link=document.createElement('link');link.rel='manifest';link.href=URL.createObjectURL(b);document.head.appendChild(link);
+  }catch(e){}
+})();
+
+// ══ SERVICE WORKER ══════════════════════════════════════════
+if('serviceWorker' in navigator){
+  try{
+    const sw="const C='smy-v3';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.add(self.location.pathname)));self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});";
+    navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'text/javascript'}))).catch(()=>{});
+  }catch(e){}
+}
+
+// ══ MOBILE ══════════════════════════════════════════════════
+const isMob=()=>window.innerWidth<=768;
+function applyMob(){
+  const on=isMob();
+  const b=document.getElementById('mob-cust-block');
+  const f=document.getElementById('mob-fab');
+  if(b)b.style.display=on?'flex':'none';
+  if(f)f.style.display=on?'flex':'none';
+}
+function syncMob(el,id){
+  const t=document.getElementById(id);
+  if(t)t.value=el.value;
+  renderQPreview();
+}
+function updateMobArr(){
+  const el=document.getElementById('mob-arr-disp');
+  if(!el)return;
+  el.textContent=window._arrivalText?('希望到貨日　'+window._arrivalText):'希望到貨日　點擊選擇';
+  el.style.color=window._arrivalText?'var(--gold)':'var(--dim)';
+}
+const _ca=confirmArrival;
+confirmArrival=function(){_ca();updateMobArr();};
+const _cl=clearArrival;
+clearArrival=function(){_cl();updateMobArr();};
+function openMobPreview(){
+  renderQPreview();
+  const src=document.getElementById('quote-card');
+  const wrap=document.getElementById('mob-card-wrap');
+  if(!src||!wrap)return;
+  const cl=src.cloneNode(true);cl.removeAttribute('id');cl.style.width='100%';cl.style.maxWidth='460px';
+  if(!wrap)return;
+  wrap.innerHTML='';wrap.appendChild(cl);
+  const ov=document.getElementById('mob-ov');
+  if(ov){ov.classList.add('on');document.body.style.overflow='hidden';}
+}
+function closeMobPreview(){
+  const ov=document.getElementById('mob-ov');
+  if(ov){ov.classList.remove('on');document.body.style.overflow='';}
+}
+window.addEventListener('resize',applyMob);
+setTimeout(applyMob,80);
 </script>
 </body>
 </html>
