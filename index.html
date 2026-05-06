@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" style="overflow-x:hidden">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -340,17 +340,18 @@ tr:hover td{background:var(--s2)}
   .qleft{display:flex;flex-direction:column;gap:12px;padding:12px;padding-bottom:16px;overflow:visible;border-right:none;background:var(--s1);width:100%;box-sizing:border-box;max-width:100vw}
   .qright,.qbar{display:none!important}
   /* Mobile customer block */
-  #mob-cust-block{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px;flex-direction:column;gap:8px;width:100%;box-sizing:border-box}
-  .mf{display:flex;align-items:center;gap:8px;width:100%;min-width:0}
-  .mflbl{font-size:9px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;width:30px;min-width:30px;flex-shrink:0}
-  .mf input{flex:1;min-width:0;width:0;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:7px 9px;font-family:var(--sans);outline:none;box-sizing:border-box}
+  #mob-cust-block{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px;flex-direction:column;gap:0;width:100%;box-sizing:border-box}
+  .mf{display:flex;flex-direction:column;gap:3px;padding:6px 0;border-bottom:1px solid var(--border)}
+  .mf:last-child{border-bottom:none}
+  .mflbl{font-size:9px;color:var(--muted);font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;display:block}
+  .mf input{display:block;width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:8px 10px;font-family:var(--sans);outline:none;box-sizing:border-box}
   .mf input:focus{border-color:var(--gold)}
-  #mob-arr-chip{display:flex;align-items:center;gap:6px;flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:7px 9px;cursor:pointer;overflow:hidden}
-  #mob-arr-chip span:first-child{flex:1;min-width:0;font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #mob-arr-chip{display:flex;align-items:center;gap:6px;width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px 10px;cursor:pointer;box-sizing:border-box}
+  #mob-arr-chip span:first-child{flex:1;font-size:13px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* Calendar: centered modal on mobile */
   #cal-popover{position:fixed!important;top:50%!important;left:50%!important;right:auto!important;transform:translate(-50%,-50%)!important;max-width:calc(100vw - 32px)!important;z-index:600!important}
   /* Prevent iOS input zoom */
-  select,input,textarea{font-size:16px!important;box-sizing:border-box}
+  select,input,textarea{font-size:16px!important;box-sizing:border-box;max-width:100%}
   /* Form rows wrap on small screens */
   .card>div[style*="display:flex;gap:7px"]{flex-wrap:wrap}
   [style*="width:80px"],[style*="width:86px"],[style*="width:72px"],[style*="width:68px"]{
@@ -400,12 +401,12 @@ tr:hover td{background:var(--s2)}
     /* Topbar on mobile */
     #topbar{overflow:hidden}
     /* Shell full width */
-    #shell,#content{width:100%;max-width:100vw;overflow-x:hidden}
+    #shell,#content,.qleft,.card{width:100%;max-width:100%;overflow-x:hidden;box-sizing:border-box}
   }
 
 </style>
 </head>
-<body>
+<body style="overflow-x:hidden">
 <div id="shell">
 
 <!-- TOP BAR -->
@@ -509,14 +510,24 @@ tr:hover td{background:var(--s2)}
 <div class="tab-panel active" id="tab-quote">
   <div class="qleft">
 
-    <!-- Mobile Customer Info Panel (hidden on desktop) -->
-    <!-- 手機客戶資料 (hidden on desktop via CSS) -->
-    <div id="mob-cust-block" style="display:none">
-      <div class="stitle">客戶資料 &amp; 到貨日</div>
-      <div class="mf"><span class="mflbl">客戶</span><input type="text" placeholder="客戶名稱" oninput="syncMob(this,'customer-name')"></div>
-      <div class="mf"><span class="mflbl">統編</span><input type="text" placeholder="統一編號" oninput="syncMob(this,'customer-tax-id')"></div>
-      <div class="mf"><span class="mflbl">電話</span><input type="tel" placeholder="聯絡電話" oninput="syncMob(this,'customer-phone')"></div>
-      <div class="mf"><span class="mflbl">地址</span><input type="text" placeholder="收件地址" oninput="syncMob(this,'customer-addr')"></div>
+    <!-- 手機客戶資料 -->
+    <div id="mob-cust-block" style="display:none;flex-direction:column;gap:0;background:var(--s2);border:1px solid var(--border);border-radius:5px;overflow:hidden">
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">客戶</div>
+        <input type="text" placeholder="客戶名稱" oninput="syncMob(this,'customer-name')" style="display:block;width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:8px 10px;font-size:16px;font-family:'Noto Sans TC',sans-serif;outline:none;box-sizing:border-box">
+      </div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">統一編號</div>
+        <input type="text" placeholder="統一編號（選填）" oninput="syncMob(this,'customer-tax-id')" style="display:block;width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:8px 10px;font-size:16px;font-family:'Space Mono',monospace;outline:none;box-sizing:border-box">
+      </div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">電話</div>
+        <input type="tel" placeholder="聯絡電話" oninput="syncMob(this,'customer-phone')" style="display:block;width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:8px 10px;font-size:16px;font-family:'Space Mono',monospace;outline:none;box-sizing:border-box">
+      </div>
+      <div style="padding:8px 12px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">收件地址</div>
+        <input type="text" placeholder="收件地址（文字會自動換行）" oninput="syncMob(this,'customer-addr')" style="display:block;width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:8px 10px;font-size:16px;font-family:'Noto Sans TC',sans-serif;outline:none;box-sizing:border-box;word-break:break-all">
+      </div>
       <div class="mf"><span class="mflbl">到貨</span><div id="mob-arr-chip" onclick="toggleCalendar()"><span id="mob-arr-disp">希望到貨日　點擊選擇</span><span style="font-size:10px;color:var(--muted)">▾</span></div></div>
     </div>
 
