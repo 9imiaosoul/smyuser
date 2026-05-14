@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>貓社長・生魚片成本計算機</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#111110; --bg2:#1a1918; --bg3:#222120; --bg4:#2c2b29;
+  --line:rgba(255,255,255,0.08); --line2:rgba(255,255,255,0.14);
+  --text:#e8e5df; --text2:#9c9890; --text3:#5c5a56;
+  --amber:#d4a855; --amber2:#f0c97a; --amber-bg:rgba(212,168,85,0.1);
+  --red:#d05a4a; --red-bg:rgba(208,90,74,0.1);
+  --green:#5a9e72; --green-bg:rgba(90,158,114,0.1);
+  --blue:#4a82b8; --blue-bg:rgba(74,130,184,0.1);
+  --radius:6px; --radius-lg:10px;
+  --mono:'DM Mono',monospace; --sans:'Noto Sans TC',sans-serif;
+}
+html { font-size:14px; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; line-height:1.6;
+  background-image:linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px);
+  background-size:40px 40px; }
+.page { max-width:980px; margin:0 auto; padding:2.5rem 1.5rem 4rem; }
+
+/* HEADER */
+.header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:2.5rem; padding-bottom:1.5rem; border-bottom:1px solid var(--line2); }
+.brand { display:flex; align-items:center; gap:14px; }
+.brand-icon { width:44px; height:44px; background:var(--amber-bg); border:1px solid var(--amber); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.brand-text h1 { font-size:20px; font-weight:700; letter-spacing:0.04em; }
+.brand-text p { font-size:12px; color:var(--text2); letter-spacing:0.06em; margin-top:2px; }
+.header-meta { font-family:var(--mono); font-size:11px; color:var(--text3); text-align:right; line-height:1.8; }
+
+/* SECTION LABEL */
+.sl { font-size:11px; font-weight:500; letter-spacing:0.12em; color:var(--text3); text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.sl::after { content:''; flex:1; height:1px; background:var(--line); }
+
+/* TABLE */
+.table-wrap { overflow-x:auto; margin-bottom:1rem; }
+table { width:100%; border-collapse:collapse; min-width:680px; }
+thead tr { border-bottom:1px solid var(--line2); }
+th { font-size:11px; font-weight:500; color:var(--text3); letter-spacing:0.08em; text-align:left; padding:8px 10px; white-space:nowrap; text-transform:uppercase; }
+tbody tr { border-bottom:1px solid var(--line); transition:background 0.15s; }
+tbody tr:hover { background:var(--bg2); }
+tbody tr:last-child { border-bottom:none; }
+td { padding:9px 10px; vertical-align:middle; }
+
+/* INPUTS */
+input[type="text"],input[type="number"],select {
+  background:var(--bg3); border:1px solid var(--line2); border-radius:var(--radius);
+  padding:6px 9px; font-size:13px; font-family:var(--sans); color:var(--text);
+  outline:none; width:100%; transition:border-color 0.15s;
+}
+input[type="text"]:focus,input[type="number"]:focus,select:focus { border-color:var(--amber); }
+input[type="number"],select { font-family:var(--mono); }
+
+/* TOGGLE */
+.toggle { display:inline-flex; border:1px solid var(--line2); border-radius:var(--radius); overflow:hidden; background:var(--bg3); }
+.toggle button { padding:5px 9px; font-size:11px; font-weight:500; cursor:pointer; background:transparent; border:none; color:var(--text3); font-family:var(--sans); transition:all 0.12s; white-space:nowrap; }
+.toggle button.active { background:var(--amber-bg); color:var(--amber2); }
+.toggle button:hover:not(.active) { color:var(--text2); }
+
+/* VAL */
+.vp { font-family:var(--mono); font-size:13px; font-weight:500; color:var(--text); }
+.vs { font-family:var(--mono); font-size:11px; color:var(--text3); margin-top:2px; }
+.va { color:var(--amber2); }
+
+/* DEL */
+.del-btn { background:none; border:none; cursor:pointer; width:26px; height:26px; border-radius:var(--radius); color:var(--text3); font-size:16px; display:flex; align-items:center; justify-content:center; transition:all 0.12s; }
+.del-btn:hover { background:var(--red-bg); color:var(--red); }
+
+/* ADD ROW */
+.add-row { display:flex; gap:10px; align-items:center; padding:10px; background:var(--bg2); border:1px dashed var(--line2); border-radius:var(--radius-lg); margin-bottom:2rem; }
+.add-row input { flex:1; background:transparent; border:none; border-bottom:1px solid var(--line2); border-radius:0; padding:4px; }
+.add-row input:focus { border-color:var(--amber); }
+.add-btn { padding:8px 18px; background:var(--amber-bg); border:1px solid var(--amber); border-radius:var(--radius); color:var(--amber2); font-size:13px; font-family:var(--sans); font-weight:500; cursor:pointer; white-space:nowrap; transition:all 0.12s; }
+.add-btn:hover { background:rgba(212,168,85,0.2); }
+
+/* PANEL */
+.panel { background:var(--bg2); border:1px solid var(--line2); border-radius:var(--radius-lg); padding:1.25rem 1.5rem; margin-bottom:1.5rem; }
+
+/* BREAKDOWN GRID */
+.breakdown-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:10px; margin-bottom:1.5rem; }
+.bc-card { background:var(--bg2); border:1px solid var(--line2); border-radius:var(--radius-lg); padding:14px 16px; transition:border-color 0.15s; }
+.bc-card:hover { border-color:var(--amber); }
+.bc-fish { font-size:13px; font-weight:700; color:var(--text); margin-bottom:10px; }
+.bc-row { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--line); font-size:12px; }
+.bc-row:last-of-type { border-bottom:none; }
+.bc-rl { color:var(--text3); }
+.bc-rv { font-family:var(--mono); font-weight:500; color:var(--text2); }
+.bc-total { display:flex; justify-content:space-between; align-items:baseline; margin-top:10px; padding-top:10px; border-top:1px solid var(--line2); }
+.bc-tl { font-size:12px; color:var(--text2); }
+.bc-tv { font-family:var(--mono); font-size:20px; font-weight:500; color:var(--amber2); }
+.bc-ts { font-family:var(--mono); font-size:11px; color:var(--text3); margin-top:2px; text-align:right; }
+
+/* PACKAGING */
+.pkg-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.pkg-item { display:flex; align-items:center; gap:8px; background:var(--bg3); border:1px solid var(--line2); border-radius:var(--radius); padding:7px 12px; }
+.pkg-item label { font-size:12px; color:var(--text2); white-space:nowrap; }
+.pkg-item input { width:70px; background:transparent; border:none; border-bottom:1px solid var(--line2); border-radius:0; padding:2px 4px; font-family:var(--mono); font-size:13px; }
+.pkg-item input:focus { border-color:var(--amber); }
+.pkg-unit { font-size:12px; color:var(--text3); }
+.pkg-total { font-family:var(--mono); font-size:12px; color:var(--amber2); padding:7px 14px; background:var(--amber-bg); border:1px solid rgba(212,168,85,0.2); border-radius:var(--radius); white-space:nowrap; }
+
+/* LABOR */
+.labor-split { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:600px){ .labor-split{ grid-template-columns:1fr; } }
+.labor-inputs { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.lig label { display:block; font-size:11px; color:var(--text3); letter-spacing:0.06em; margin-bottom:5px; text-transform:uppercase; }
+.labor-result { background:var(--bg3); border:1px solid var(--line2); border-radius:var(--radius-lg); padding:14px 16px; }
+.lr { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--line); font-size:12px; }
+.lr:last-child { border-bottom:none; }
+.lrl { color:var(--text3); }
+.lrv { font-family:var(--mono); font-weight:500; color:var(--text2); }
+.lrh { color:var(--amber2) !important; font-size:14px; }
+.labor-note { font-size:11px; color:var(--text3); margin-top:12px; line-height:1.8; padding:10px 12px; background:var(--bg4); border-radius:var(--radius); }
+
+/* PRICING */
+.price-sel-row { display:flex; align-items:center; gap:10px; margin-bottom:1rem; flex-wrap:wrap; }
+.price-sel-row label { font-size:12px; color:var(--text2); white-space:nowrap; }
+.price-sel-row select { width:130px; }
+.cost-lines { margin-bottom:1rem; }
+.cline { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--line); font-size:12px; }
+.cline:last-child { border-bottom:none; }
+.cll { color:var(--text3); }
+.clv { font-family:var(--mono); font-weight:500; color:var(--text2); }
+.total-line { display:flex; justify-content:space-between; align-items:baseline; margin-top:12px; padding-top:12px; border-top:1px solid var(--line2); }
+.tll { font-size:13px; font-weight:500; color:var(--text2); }
+.tlv { font-family:var(--mono); font-size:22px; font-weight:700; color:var(--amber2); }
+.pricing-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:10px; margin-bottom:8px; }
+.price-card { border-radius:var(--radius-lg); padding:16px; text-align:center; border:1px solid var(--line2); background:var(--bg3); position:relative; overflow:hidden; }
+.price-card.rec { border-color:var(--amber); background:var(--amber-bg); }
+.price-card.rec::before { content:'建議'; position:absolute; top:8px; right:-18px; background:var(--amber); color:#111; font-size:10px; font-weight:700; padding:2px 22px; transform:rotate(30deg); letter-spacing:0.06em; }
+.pcm { font-size:11px; color:var(--text3); letter-spacing:0.08em; margin-bottom:8px; }
+.pcv { font-family:var(--mono); font-size:26px; font-weight:500; color:var(--text); line-height:1; margin-bottom:6px; }
+.pcp { font-family:var(--mono); font-size:12px; color:var(--green); }
+
+/* COMBO */
+.combo-outer { display:flex; flex-direction:column; gap:12px; margin-bottom:1.5rem; }
+.combo-card { background:var(--bg2); border:1px solid var(--line2); border-radius:var(--radius-lg); overflow:hidden; transition:border-color 0.15s; }
+.combo-card.valid { border-color:var(--green); }
+.combo-card.over  { border-color:var(--red); }
+.combo-hdr { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--bg3); }
+.combo-ni { flex:1; background:transparent; border:none; border-bottom:1px solid var(--line2); border-radius:0; padding:3px 4px; font-size:14px; font-weight:500; color:var(--text); font-family:var(--sans); outline:none; }
+.combo-ni:focus { border-color:var(--amber); }
+.combo-body { padding:12px 14px; }
+.combo-rows { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+/* COMBO ROW - grid layout */
+.combo-rows { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.combo-col-hdr {
+  display:grid;
+  grid-template-columns: 130px 70px 14px 60px 14px 70px 90px 28px;
+  gap:6px;
+  font-size:11px; color:var(--text3); letter-spacing:0.06em;
+  margin-bottom:6px; padding:0 2px;
+  align-items:center;
+}
+.combo-row {
+  display:grid;
+  grid-template-columns: 130px 70px 14px 60px 14px 70px 90px 28px;
+  gap:6px;
+  align-items:center;
+}
+.combo-row select,
+.combo-row input[type="number"] {
+  width:100% !important;
+  font-family:var(--mono);
+  padding:6px 7px;
+}
+.combo-row select { font-family:var(--sans) !important; }
+.clsm { font-size:12px; color:var(--text3); white-space:nowrap; text-align:center; }
+.cg-display {
+  font-family:var(--mono); font-size:12px; color:var(--text3);
+  background:var(--bg4); border:1px solid var(--line);
+  border-radius:var(--radius); padding:6px 7px;
+  text-align:center; white-space:nowrap;
+}
+.crc {
+  font-family:var(--mono); font-size:13px; font-weight:500;
+  color:var(--amber2); text-align:right;
+}
+.crd {
+  background:none; border:none; cursor:pointer; color:var(--text3);
+  font-size:15px; width:24px; height:24px; border-radius:var(--radius);
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.12s; justify-self:center;
+}
+.crd:hover { background:var(--red-bg); color:var(--red); }
+.cadd { display:flex; align-items:center; gap:6px; background:none; border:1px dashed var(--line2); border-radius:var(--radius); padding:5px 12px; font-size:12px; color:var(--text3); cursor:pointer; font-family:var(--sans); transition:all 0.12s; }
+.cadd:hover { border-color:var(--amber); color:var(--amber2); }
+
+/* COMBO FOOTER */
+.combo-foot { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px; }
+.combo-foot-top { display:flex; align-items:center; gap:14px; }
+.prog-wrap { flex:1; }
+.prog-meta { display:flex; justify-content:space-between; margin-bottom:5px; font-family:var(--mono); font-size:11px; }
+.prog-bg { height:6px; background:var(--bg4); border-radius:3px; overflow:hidden; position:relative; }
+.prog-fill { height:100%; border-radius:3px; transition:width 0.2s,background 0.2s; }
+.prog-tgt { position:absolute; top:-2px; height:10px; width:2px; background:var(--amber); border-radius:1px; }
+
+/* COST DETAIL */
+.combo-cost-detail {
+  background:var(--bg3); border:1px solid var(--line2);
+  border-radius:var(--radius-lg); padding:12px 14px;
+}
+.ccd-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid var(--line); font-size:12px; }
+.ccd-row:last-of-type { border-bottom:none; }
+.ccd-l { color:var(--text3); }
+.ccd-v { font-family:var(--mono); font-weight:500; color:var(--text2); }
+.ccd-total { display:flex; justify-content:space-between; align-items:baseline; margin-top:10px; padding-top:10px; border-top:1px solid var(--line2); }
+.ccd-tl { font-size:12px; font-weight:500; color:var(--text2); }
+.ccd-tv { font-family:var(--mono); font-size:18px; font-weight:700; color:var(--amber2); }
+
+/* MARGIN TOGGLE */
+.margin-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px; }
+.margin-row-lbl { font-size:11px; color:var(--text3); white-space:nowrap; letter-spacing:0.06em; }
+.margin-toggle { display:flex; border:1px solid var(--line2); border-radius:var(--radius); overflow:hidden; background:var(--bg3); }
+.margin-toggle button { padding:5px 11px; font-size:11px; font-weight:500; cursor:pointer; background:transparent; border:none; color:var(--text3); font-family:var(--mono); transition:all 0.12s; white-space:nowrap; }
+.margin-toggle button.active { background:var(--amber-bg); color:var(--amber2); }
+.margin-toggle button:hover:not(.active) { color:var(--text2); }
+
+/* SELL PRICE */
+.sell-price-display {
+  display:flex; align-items:baseline; gap:10px;
+  padding:10px 14px;
+  background:var(--amber-bg); border:1px solid rgba(212,168,85,0.25);
+  border-radius:var(--radius);
+}
+.spd-label { font-size:12px; color:var(--text2); white-space:nowrap; }
+.spd-val { font-family:var(--mono); font-size:24px; font-weight:700; color:var(--amber2); }
+.spd-profit { font-family:var(--mono); font-size:12px; color:var(--green); margin-left:auto; white-space:nowrap; }
+.sbadge { font-size:11px; padding:3px 9px; border-radius:20px; font-weight:500; letter-spacing:0.04em; white-space:nowrap; }
+.bok  { background:var(--green-bg);  color:var(--green);  border:1px solid rgba(90,158,114,0.25); }
+.bover{ background:var(--red-bg);    color:var(--red);    border:1px solid rgba(208,90,74,0.25); }
+.blow { background:var(--amber-bg);  color:var(--amber2); border:1px solid rgba(212,168,85,0.25); }
+.add-combo-btn { display:flex; align-items:center; justify-content:center; gap:8px; padding:10px 20px; background:transparent; border:1px dashed var(--line2); border-radius:var(--radius-lg); font-size:13px; color:var(--text3); cursor:pointer; font-family:var(--sans); transition:all 0.15s; width:100%; }
+.add-combo-btn:hover { border-color:var(--amber); color:var(--amber2); background:var(--amber-bg); }
+
+/* INFO */
+.info { display:flex; gap:10px; background:var(--blue-bg); border:1px solid rgba(74,130,184,0.25); border-radius:var(--radius); padding:10px 14px; font-size:12px; color:var(--blue); margin-bottom:1rem; line-height:1.8; }
+
+/* FOOTER */
+.footer { margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--line); font-size:11px; color:var(--text3); display:flex; justify-content:space-between; font-family:var(--mono); }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.fi { animation:fadeIn 0.3s ease forwards; }
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<div class="header fi">
+  <div class="brand">
+    <div class="brand-icon">🐱</div>
+    <div class="brand-text">
+      <h1>貓社長</h1>
+      <p>生魚片套餐完整成本計算機 · SASHIMI FULL COST CALCULATOR</p>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div>1 台斤 = 600g</div>
+    <div>每片基準 20g</div>
+    <div>一盒目標 250g</div>
+  </div>
+</div>
+
+<!-- ① 魚品 -->
+<div class="sl">① 魚品品項管理</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:115px">品項</th>
+        <th style="width:100px">進貨重量</th>
+        <th style="width:88px">重量單位</th>
+        <th style="width:105px">市場售價</th>
+        <th style="width:88px">計價單位</th>
+        <th style="width:105px">每公斤成本</th>
+        <th style="width:90px">每20g成本</th>
+        <th style="width:36px"></th>
+      </tr>
+    </thead>
+    <tbody id="fishBody"></tbody>
+  </table>
+</div>
+<div class="add-row">
+  <span style="font-size:13px;color:var(--text3);white-space:nowrap">新增品項</span>
+  <input type="text" id="newFishName" placeholder="輸入魚品名稱（如：比目魚、甜蝦）" />
+  <button class="add-btn" onclick="addFish()">+ 新增</button>
+</div>
+
+<!-- ② 一盒成本拆解 -->
+<div class="sl">② 單一魚種・一盒 250g 完整成本拆解</div>
+<div class="info">💡 <span>這裡計算「整盒只放同一種魚 250g」的完整成本。<br>
+公式：<b>食材成本</b>（每公斤÷1000×250g）＋ <b>包材</b>（盒＋袋）＋ <b>人力分攤</b>（每盒）＝ 完整成本。<br>
+各項數值可在下方③④設定後，這裡會自動更新。</span></div>
+<div class="breakdown-grid" id="breakdownGrid"></div>
+
+<!-- ③ 包材 -->
+<div class="sl">③ 包材成本設定</div>
+<div class="panel">
+  <div class="pkg-row">
+    <div class="pkg-item">
+      <label>📦 盒子</label>
+      <input type="number" id="boxCost" value="5" min="0" step="0.5" oninput="renderAll()" />
+      <span class="pkg-unit">元/個</span>
+    </div>
+    <div class="pkg-item">
+      <label>🛍 袋子</label>
+      <input type="number" id="bagCost" value="1" min="0" step="0.5" oninput="renderAll()" />
+      <span class="pkg-unit">元/個</span>
+    </div>
+    <div id="pkgTotal" class="pkg-total">包材小計：6 元/盒</div>
+  </div>
+</div>
+
+<!-- ④ 人力 -->
+<div class="sl">④ 人力成本計算</div>
+<div class="panel">
+  <div class="labor-split">
+    <div class="labor-inputs">
+      <div class="lig"><label>採購人數（人）</label><input type="number" id="lPeople" value="2" min="1" step="1" oninput="renderAll()" /></div>
+      <div class="lig"><label>採購趟次/週</label><input type="number" id="lTrips" value="1" min="1" step="1" oninput="renderAll()" /></div>
+      <div class="lig"><label>採購＋車程（小時/趟）</label><input type="number" id="lShopHr" value="1" min="0" step="0.5" oninput="renderAll()" /></div>
+      <div class="lig"><label>整理切片裝盒（小時）</label><input type="number" id="lPrepHr" value="3.5" min="0" step="0.5" oninput="renderAll()" /></div>
+      <div class="lig"><label>時薪參考（元）</label><input type="number" id="lWage" value="183" min="0" step="1" oninput="renderAll()" /></div>
+      <div class="lig"><label>每週出幾盒</label><input type="number" id="lBoxes" value="20" min="1" step="1" oninput="renderAll()" /></div>
+    </div>
+    <div class="labor-result" id="laborResult"></div>
+  </div>
+  <div class="labor-note" id="laborNote"></div>
+</div>
+
+<!-- ⑤ 建議售價 -->
+<div class="sl">⑤ 完整成本 ＆ 建議售價</div>
+<div class="panel">
+  <div class="price-sel-row">
+    <label>計算基準魚種：</label>
+    <select id="priceBaseFish" onchange="renderAll()" style="width:130px;font-family:var(--sans)"></select>
+    <span style="font-size:12px;color:var(--text3)">（組合盒請見⑥各盒內顯示）</span>
+  </div>
+  <div class="cost-lines" id="fullCostBreakdown"></div>
+  <div class="pricing-grid" id="pricingGrid"></div>
+  <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.8;">
+    ※ 利潤率 ＝（售價－成本）÷ 售價。售價已自動進位至 5 元整數。<br>
+    ※ 建議以 <b style="color:var(--amber2)">40%</b> 為目標，可覆蓋損耗、未來人力調整與市場彈性。
+  </div>
+</div>
+
+<!-- ⑥ 組合盒 -->
+<div class="sl">⑥ 自由組合套餐盒（多種魚混搭）</div>
+<div class="info">💡 <span>選擇魚種，輸入 <b>片數</b>，克數自動以 <b>片數 × 20g</b> 計算。調整各魚比例讓進度條落在 212.5–287.5g 範圍（金色線 = 250g 目標）。</span></div>
+<div class="combo-outer" id="comboOuter"></div>
+<button class="add-combo-btn" onclick="addCombo()">+ 新增組合盒</button>
+<div style="height:2rem"></div>
+
+<div class="footer">
+  <span>CAT PRESIDENT · 海之道海鮮屋</span>
+  <span>資料僅供內部成本參考</span>
+</div>
+</div>
+
+<script>
+/* DATA */
+const DEFAULT_FISH=[
+  {name:'旗魚',weight:1,weightUnit:'kg',price:300,priceUnit:'kg'},
+  {name:'鮪魚',weight:1,weightUnit:'kg',price:800,priceUnit:'kg'},
+  {name:'鮭魚',weight:1,weightUnit:'kg',price:500,priceUnit:'kg'},
+  {name:'鰹魚',weight:1,weightUnit:'kg',price:350,priceUnit:'kg'},
+];
+let fishes=DEFAULT_FISH.map((f,i)=>({...f,id:i}));
+let nextId=DEFAULT_FISH.length;
+
+/* HELPERS */
+function toKg(f){const w=parseFloat(f.weight)||0;return f.weightUnit==='jin'?w*0.6:w;}
+function cpkg(f){const p=parseFloat(f.price)||0;return f.priceUnit==='jin'?p/0.6:p;}
+function cp20g(f){return cpkg(f)/1000*20;}
+function cp250g(f){return cpkg(f)/1000*250;}
+function pkg(){return (parseFloat(document.getElementById('boxCost').value)||0)+(parseFloat(document.getElementById('bagCost').value)||0);}
+function laborPerBox(){
+  const ppl=parseFloat(document.getElementById('lPeople').value)||1;
+  const shop=parseFloat(document.getElementById('lShopHr').value)||0;
+  const prep=parseFloat(document.getElementById('lPrepHr').value)||0;
+  const wage=parseFloat(document.getElementById('lWage').value)||0;
+  const boxes=parseFloat(document.getElementById('lBoxes').value)||1;
+  const trips=parseFloat(document.getElementById('lTrips').value)||1;
+  return (ppl*(shop*trips+prep)*wage)/boxes;
+}
+function fullCost(f){return cp250g(f)+pkg()+laborPerBox();}
+
+/* FISH CRUD */
+function toggle(id,field,val){const f=fishes.find(x=>x.id===id);if(f){f[field]=val;renderAll();}}
+function upd(id,field,val){const f=fishes.find(x=>x.id===id);if(f){f[field]=val;renderAll();}}
+function delFish(id){fishes=fishes.filter(x=>x.id!==id);renderAll();}
+function addFish(){
+  const inp=document.getElementById('newFishName');
+  const name=inp.value.trim();if(!name)return;
+  fishes.push({id:nextId++,name,weight:1,weightUnit:'kg',price:300,priceUnit:'kg'});
+  inp.value='';renderAll();
+}
+document.getElementById('newFishName').addEventListener('keydown',e=>{if(e.key==='Enter')addFish();});
+
+/* ① TABLE */
+function renderTable(){
+  const tb=document.getElementById('fishBody');tb.innerHTML='';
+  fishes.forEach(f=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><input type="text" value="${f.name}" onchange="upd(${f.id},'name',this.value)" style="width:100px"/></td>
+      <td><input type="number" value="${f.weight}" min="0" step="0.1" onchange="upd(${f.id},'weight',this.value)" style="width:76px"/></td>
+      <td><div class="toggle">
+        <button class="${f.weightUnit==='kg'?'active':''}" onclick="toggle(${f.id},'weightUnit','kg')">公斤</button>
+        <button class="${f.weightUnit==='jin'?'active':''}" onclick="toggle(${f.id},'weightUnit','jin')">台斤</button>
+      </div></td>
+      <td><input type="number" value="${f.price}" min="0" step="1" onchange="upd(${f.id},'price',this.value)" style="width:86px"/></td>
+      <td><div class="toggle">
+        <button class="${f.priceUnit==='kg'?'active':''}" onclick="toggle(${f.id},'priceUnit','kg')">/公斤</button>
+        <button class="${f.priceUnit==='jin'?'active':''}" onclick="toggle(${f.id},'priceUnit','jin')">/台斤</button>
+      </div></td>
+      <td><div class="vp">NT$ ${Math.round(cpkg(f))}</div></td>
+      <td><div class="vp va">NT$ ${cp20g(f).toFixed(1)}</div></td>
+      <td><button class="del-btn" onclick="delFish(${f.id})">×</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+/* ② BREAKDOWN */
+function renderBreakdown(){
+  const g=document.getElementById('breakdownGrid');g.innerHTML='';
+  const p=pkg(),lb=laborPerBox();
+  fishes.forEach(f=>{
+    const ing=cp250g(f),tot=ing+p+lb;
+    const card=document.createElement('div');card.className='bc-card';
+    card.innerHTML=`
+      <div class="bc-fish">🐟 ${f.name}</div>
+      <div class="bc-row"><span class="bc-rl">食材（250g）</span><span class="bc-rv">NT$ ${ing.toFixed(1)}</span></div>
+      <div class="bc-row"><span class="bc-rl">包材（盒+袋）</span><span class="bc-rv">NT$ ${p.toFixed(1)}</span></div>
+      <div class="bc-row"><span class="bc-rl">人力分攤/盒</span><span class="bc-rv">NT$ ${lb.toFixed(1)}</span></div>
+      <div class="bc-total">
+        <span class="bc-tl">完整成本/盒</span>
+        <div><div class="bc-tv">NT$ ${Math.round(tot)}</div><div class="bc-ts">每片 ≈ NT$ ${(tot/250*20).toFixed(1)}</div></div>
+      </div>
+    `;
+    g.appendChild(card);
+  });
+}
+
+/* ③ PKG */
+function renderPkg(){
+  document.getElementById('pkgTotal').textContent=`包材小計：${pkg().toFixed(1)} 元/盒`;
+}
+
+/* ④ LABOR */
+function renderLabor(){
+  const ppl=parseFloat(document.getElementById('lPeople').value)||1;
+  const shop=parseFloat(document.getElementById('lShopHr').value)||0;
+  const prep=parseFloat(document.getElementById('lPrepHr').value)||0;
+  const wage=parseFloat(document.getElementById('lWage').value)||0;
+  const boxes=parseFloat(document.getElementById('lBoxes').value)||1;
+  const trips=parseFloat(document.getElementById('lTrips').value)||1;
+  const shopTot=ppl*shop*trips, prepTot=ppl*prep;
+  const totHr=shopTot+prepTot, weekL=totHr*wage, perBox=weekL/boxes;
+  document.getElementById('laborResult').innerHTML=`
+    <div class="lr"><span class="lrl">採購總人時（含車程）</span><span class="lrv">${shopTot.toFixed(1)} 人時/週</span></div>
+    <div class="lr"><span class="lrl">整理切片裝盒人時</span><span class="lrv">${prepTot.toFixed(1)} 人時/週</span></div>
+    <div class="lr"><span class="lrl">每週總人時</span><span class="lrv">${totHr.toFixed(1)} 人時</span></div>
+    <div class="lr"><span class="lrl">每週人力費用</span><span class="lrv">NT$ ${Math.round(weekL)}</span></div>
+    <div class="lr"><span class="lrl">每週出貨盒數</span><span class="lrv">${boxes} 盒</span></div>
+    <div class="lr"><span class="lrl">→ 每盒分攤人力</span><span class="lrv lrh">NT$ ${perBox.toFixed(1)}</span></div>
+  `;
+  document.getElementById('laborNote').innerHTML=`
+    ⏰ 計算邏輯：${ppl} 人 ×（採購 ${shop}hr × ${trips}次 ＋ 整理 ${prep}hr）＝ <b>${totHr.toFixed(1)} 人時/週</b><br>
+    × 時薪 NT$${wage} ÷ ${boxes} 盒 ＝ <b>每盒人力成本 NT$${perBox.toFixed(1)}</b><br>
+    ※ 時薪 183元 為 2025 台灣法定最低時薪，可依實際薪資調整。若兩人有固定薪水，建議填入月薪÷176（月工時）換算時薪。
+  `;
+}
+
+/* ⑤ PRICING */
+function renderPricing(){
+  const sel=document.getElementById('priceBaseFish');
+  const cur=sel.value;
+  sel.innerHTML=fishes.map(f=>`<option value="${f.id}" ${f.id==cur?'selected':''}>${f.name}</option>`).join('');
+  const f=fishes.find(x=>x.id==sel.value)||fishes[0];
+  if(!f){document.getElementById('fullCostBreakdown').innerHTML='';document.getElementById('pricingGrid').innerHTML='';return;}
+  const ing=cp250g(f),p=pkg(),lb=laborPerBox(),tot=ing+p+lb;
+  document.getElementById('fullCostBreakdown').innerHTML=`
+    <div class="cline"><span class="cll">食材成本（${f.name} 250g）</span><span class="clv">NT$ ${ing.toFixed(1)}</span></div>
+    <div class="cline"><span class="cll">包材（盒+袋）</span><span class="clv">NT$ ${p.toFixed(1)}</span></div>
+    <div class="cline"><span class="cll">人力分攤/盒</span><span class="clv">NT$ ${lb.toFixed(1)}</span></div>
+    <div class="total-line"><span class="tll">▶ 完整成本合計</span><span class="tlv">NT$ ${Math.round(tot)}</span></div>
+  `;
+  const margins=[20,30,40,50,60];
+  document.getElementById('pricingGrid').innerHTML=margins.map(m=>{
+    const sell=Math.ceil((tot/(1-m/100))/5)*5;
+    const profit=sell-tot;
+    return `<div class="price-card${m===40?' rec':''}">
+      <div class="pcm">利潤率 ${m}%</div>
+      <div class="pcv">NT$ ${sell}</div>
+      <div class="pcp">獲利 NT$ ${Math.round(profit)}/盒</div>
+    </div>`;
+  }).join('');
+}
+
+/* ⑥ COMBO */
+const TGT=250,LOW=TGT*0.85,HIGH=TGT*1.15;
+let combos=[],comboNextId=0;
+function addCombo(){
+  const id=comboNextId++;
+  combos.push({id,name:`組合盒 ${id+1}`,margin:40,rows:[{fishId:fishes[0]?.id??null,gPerSlice:20,slices:4}]});
+  renderCombos();
+}
+function addComboRow(cid){
+  const c=combos.find(x=>x.id===cid);if(!c||!fishes.length)return;
+  const used=c.rows.map(r=>r.fishId);
+  const nxt=fishes.find(f=>!used.includes(f.id))||fishes[0];
+  c.rows.push({fishId:nxt?.id??null,gPerSlice:20,slices:3});renderCombos();
+}
+function setComboMargin(cid,m){
+  const c=combos.find(x=>x.id===cid);if(c){c.margin=m;renderCombos();}
+}
+function delComboRow(cid,ri){const c=combos.find(x=>x.id===cid);if(c){c.rows.splice(ri,1);renderCombos();}}
+function updComboName(cid,val){const c=combos.find(x=>x.id===cid);if(c)c.name=val;}
+function updComboRow(cid,ri,field,val){
+  const c=combos.find(x=>x.id===cid);if(!c)return;
+  if(field==='fishId') c.rows[ri][field]=parseInt(val);
+  else c.rows[ri][field]=parseFloat(val)||0;
+  renderCombos();
+}
+function renderCombos(){
+  const outer=document.getElementById('comboOuter');outer.innerHTML='';
+  const p=pkg(),lb=laborPerBox();
+  combos.forEach(c=>{
+    const totG=c.rows.reduce((s,r)=>s+((parseInt(r.slices)||0)*(parseFloat(r.gPerSlice)||0)),0);
+    const totS=c.rows.reduce((s,r)=>s+(parseInt(r.slices)||0),0);
+    const totIng=c.rows.reduce((s,r)=>{
+      const f=fishes.find(x=>x.id===r.fishId);
+      const g=(parseInt(r.slices)||0)*(parseFloat(r.gPerSlice)||0);
+      return s+(f?cpkg(f)/1000*g:0);
+    },0);
+    const totCost=totIng+p+lb;
+    const pct=Math.min(totG/TGT*100,130);
+    const isOk=totG>=LOW&&totG<=HIGH,isOver=totG>HIGH;
+    const barCol=isOk?'var(--green)':isOver?'var(--red)':'var(--amber)';
+    const tgtPct=(TGT/(TGT*1.3))*100;
+    const sb=isOk
+      ?`<span class="sbadge bok">✓ 符合範圍</span>`
+      :isOver
+      ?`<span class="sbadge bover">↑ 超重 ${Math.round(totG-TGT)}g</span>`
+      :totG>0
+      ?`<span class="sbadge blow">↓ 不足 ${Math.round(TGT-totG)}g</span>`
+      :`<span class="sbadge blow">尚未設定</span>`;
+
+    const rowsHtml=c.rows.map((r,ri)=>{
+      const f=fishes.find(x=>x.id===r.fishId);
+      const gps=parseFloat(r.gPerSlice)||0;
+      const sl=parseInt(r.slices)||0;
+      const totalG=gps*sl;
+      const rc=f?cpkg(f)/1000*totalG:0;
+      const opts=fishes.map(fish=>`<option value="${fish.id}" ${fish.id===r.fishId?'selected':''}>${fish.name}</option>`).join('');
+      return `<div class="combo-row">
+        <select onchange="updComboRow(${c.id},${ri},'fishId',this.value)">${opts}</select>
+        <input type="number" value="${r.gPerSlice}" min="1" step="1"
+          oninput="updComboRow(${c.id},${ri},'gPerSlice',this.value)" title="單片克數"/>
+        <span class="clsm">g ×</span>
+        <input type="number" value="${r.slices}" min="0" step="1"
+          oninput="updComboRow(${c.id},${ri},'slices',this.value)" title="片數"/>
+        <span class="clsm">片</span>
+        <span class="cg-display">${totalG}g</span>
+        <span class="crc">NT$ ${rc.toFixed(1)}</span>
+        <button class="crd" onclick="delComboRow(${c.id},${ri})" title="移除">×</button>
+      </div>`;
+    }).join('');
+
+    const card=document.createElement('div');
+    card.className=`combo-card${isOk?' valid':isOver?' over':''}`;
+    card.innerHTML=`
+      <div class="combo-hdr">
+        <input class="combo-ni" type="text" value="${c.name}" onchange="updComboName(${c.id},this.value)" />
+        ${sb}
+        <button class="del-btn" onclick="delCombo(${c.id})">×</button>
+      </div>
+      <div class="combo-body">
+        <div class="combo-col-hdr">
+          <span>魚種</span>
+          <span style="text-align:center">單片克</span>
+          <span></span>
+          <span style="text-align:center">片數</span>
+          <span></span>
+          <span style="text-align:center">= 克數</span>
+          <span style="text-align:right">食材成本</span>
+          <span></span>
+        </div>
+        <div class="combo-rows">${rowsHtml}</div>
+        <button class="cadd" onclick="addComboRow(${c.id})">+ 加入魚品</button>
+        <div class="combo-foot">
+          <!-- 進度條 -->
+          <div class="combo-foot-top">
+            <div class="prog-wrap">
+              <div class="prog-meta">
+                <span style="color:var(--text2)">共 <b style="color:var(--text)">${totS} 片</b>・總重 <b style="color:var(--text)">${totG}g</b></span>
+                <span style="color:var(--text3)">目標 212.5–287.5g（±10~15%）</span>
+              </div>
+              <div class="prog-bg">
+                <div class="prog-fill" style="width:${pct.toFixed(1)}%;background:${barCol}"></div>
+                <div class="prog-tgt" style="left:${tgtPct.toFixed(1)}%"></div>
+              </div>
+            </div>
+          </div>
+          <!-- 成本拆解 -->
+          <div class="combo-cost-detail">
+            <div class="ccd-row"><span class="ccd-l">食材成本</span><span class="ccd-v">NT$ ${totIng.toFixed(1)}</span></div>
+            <div class="ccd-row"><span class="ccd-l">包材（盒＋袋）</span><span class="ccd-v">NT$ ${p.toFixed(1)}</span></div>
+            <div class="ccd-row"><span class="ccd-l">人力分攤</span><span class="ccd-v">NT$ ${lb.toFixed(1)}</span></div>
+            <div class="ccd-total">
+              <span class="ccd-tl">完整成本合計</span>
+              <span class="ccd-tv">NT$ ${Math.round(totCost)}</span>
+            </div>
+          </div>
+          <!-- 利潤切換 -->
+          <div class="margin-row">
+            <span class="margin-row-lbl">利潤率</span>
+            <div class="margin-toggle">
+              ${[20,30,40,50,60].map(m=>`<button class="${c.margin===m?'active':''}" onclick="setComboMargin(${c.id},${m})">${m}%</button>`).join('')}
+            </div>
+          </div>
+          <!-- 建議售價 -->
+          <div class="sell-price-display">
+            <span class="spd-label">建議售價</span>
+            <span class="spd-val">NT$ ${Math.ceil(totCost/(1-c.margin/100)/5)*5}</span>
+            <span class="spd-profit">獲利 NT$ ${Math.round(Math.ceil(totCost/(1-c.margin/100)/5)*5 - totCost)} / 盒</span>
+          </div>
+        </div>
+      </div>
+    `;
+    outer.appendChild(card);
+  });
+}
+
+function renderAll(){
+  renderTable();
+  renderBreakdown();
+  renderPkg();
+  renderLabor();
+  renderPricing();
+  renderCombos();
+}
+
+addCombo();
+renderAll();
+</script>
+</body>
+</html>
