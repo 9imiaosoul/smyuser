@@ -39,7 +39,7 @@ header{background:var(--white);border-bottom:1px solid var(--line);padding:0 cla
 .product-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
 @media(max-width:1100px){.product-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:780px){.product-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:480px){.product-grid{grid-template-columns:1fr}}
+@media(max-width:480px){.product-grid{grid-template-columns:repeat(2,1fr);gap:1px}}
 .product-card{background:var(--white);transition:background .18s;position:relative;overflow:hidden;display:flex;flex-direction:column}
 .product-card::before{content:"";position:absolute;top:0;left:0;width:2px;height:0;background:var(--vermilion);transition:height .25s;z-index:1}
 .product-card:hover::before{height:100%}
@@ -79,7 +79,40 @@ header{background:var(--white);border-bottom:1px solid var(--line);padding:0 cla
 footer{border-top:1px solid var(--line);padding:2rem clamp(1.5rem,5vw,4rem);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
 .footer-brand{font-family:"Noto Serif JP",serif;font-size:.8rem;color:var(--ash);letter-spacing:.1em}
 .footer-note{font-size:.62rem;color:var(--mist);letter-spacing:.06em}
-@media(max-width:600px){.hero{grid-template-columns:1fr}.hero-count{text-align:left}.search-wrap{width:100%}.search-input{width:100%}}
+@media(max-width:600px){
+  .hero{grid-template-columns:1fr}
+  .hero-count{text-align:left}
+  .search-wrap{width:100%}
+  .search-input{width:100%}
+}
+@media(max-width:480px){
+  .card-body{padding:.7rem .75rem .4rem}
+  .card-jp{font-size:.8rem;margin-bottom:.18rem}
+  .card-vn{font-size:.64rem;margin-bottom:.3rem}
+  .card-zh{font-size:.6rem}
+  .card-en{font-size:.54rem}
+  .card-spec{font-size:.54rem;padding-top:.4rem;line-height:1.6}
+  .card-unit{font-size:.52rem;padding:.08rem .35rem}
+  .card-seq{font-size:.52rem}
+  .card-code{font-size:.5rem}
+  .cat-pill{font-size:.5rem;padding:.06rem .4rem;letter-spacing:.06em}
+  .card-ref-langs{padding-top:.35rem;margin-bottom:.35rem;gap:.1rem}
+  .card-desc{margin:0 .75rem}
+  .desc-tab{padding:.3rem .42rem;font-size:.54rem;letter-spacing:.04em}
+  .desc-text{font-size:.64rem;line-height:1.65}
+  .desc-panels{padding:.5rem 0 .85rem}
+  .card-top{margin-bottom:.5rem}
+  .filter-bar{padding:.75rem 1rem;gap:.35rem}
+  .filter-btn{padding:.22rem .52rem;font-size:.62rem}
+  .filter-label{display:none}
+  .catalog-section{padding:1rem .75rem}
+  .section-divider{margin-bottom:1rem}
+  .hero{padding:1.8rem 1rem 1.2rem}
+  .hero-eyebrow{font-size:.6rem;margin-bottom:.7rem}
+  .hero-title{font-size:1.45rem}
+  .hero-sub{font-size:.7rem;margin-top:.7rem}
+  .hero-num{font-size:2.4rem}
+}
 </style>
 </head>
 <body>
