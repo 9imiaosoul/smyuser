@@ -195,6 +195,21 @@
     gap: 14px;
   }
 
+  @media (max-width: 600px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 0 12px;
+    }
+    .card-name-zh { font-size: 13px; }
+    .card-desc { font-size: 11px; }
+    .suitable-tag { font-size: 9px; padding: 2px 5px; }
+    .card-spec { font-size: 10px; }
+    .price-value { font-size: 16px; }
+    .card-body { padding: 10px 10px; gap: 5px; }
+    .card-footer { padding: 8px 10px; }
+  }
+
   /* ── CARD ── */
   .card {
     background: var(--white);
