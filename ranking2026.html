@@ -195,17 +195,22 @@ footer{border-top:1px solid var(--border);padding:2rem clamp(1.5rem,5vw,4rem);di
   body { background: #fff; margin: 0; }
   .catalog-section { padding: 0; }
   .product-grid {
+    display: block !important;
+  }
+  .print-page {
     display: grid !important;
     grid-template-columns: repeat(5, 1fr) !important;
-    grid-auto-rows: 1fr;
+    grid-template-rows: repeat(2, auto) !important;
     gap: 6px;
-  }
-  .print-page-break {
+    height: 168mm;
+    max-height: 168mm;
+    overflow: hidden;
     break-after: page;
-    grid-column: 1 / -1;
-    height: 0;
-    margin: 0;
-    padding: 0;
+    page-break-after: always;
+  }
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
   }
   .product-card {
     break-inside: avoid;
@@ -215,19 +220,20 @@ footer{border-top:1px solid var(--border);padding:2rem clamp(1.5rem,5vw,4rem);di
     transform: none !important;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
-  .card-rank-ghost { font-size: 3rem; }
-  .card-photo { aspect-ratio: 4/3; }
+  .card-rank-ghost { display: none; }
+  .card-photo { height: 58mm; aspect-ratio: auto; }
   .card-photo img { width: 100%; height: 100%; object-fit: cover; }
-  .card-body { padding: 6px 8px 8px; gap: 4px; }
-  .card-zh { font-size: 10pt; }
-  .card-jp { font-size: 8pt; }
+  .card-body { padding: 5px 7px 6px; gap: 3px; }
+  .card-zh { font-size: 9.5pt; line-height: 1.25; }
+  .card-jp { font-size: 7.5pt; line-height: 1.25; }
   .card-tags { display: flex; }
-  .tag { font-size: 6pt; padding: 1px 5px; }
-  .card-divider { margin: 3px 0; }
-  .spec-table { font-size: 7.5pt; }
-  .spec-table td { padding: 1px 0; }
-  .card-qty, .card-amount { font-size: 7.5pt; padding-top: 4px; }
+  .tag { font-size: 5.8pt; padding: 1px 4px; }
+  .card-divider { margin: 2px 0; }
+  .spec-table { font-size: 7pt; }
+  .spec-table td { padding: 0.5px 0; }
+  .card-qty, .card-amount { font-size: 7pt; padding-top: 2px; }
   .qty-bar-wrap { display: block; }
 }
 
@@ -257,7 +263,7 @@ footer{border-top:1px solid var(--border);padding:2rem clamp(1.5rem,5vw,4rem);di
     letter-spacing: .1em;
   }
 }
-.print-page-break { display: none; }
+.print-page { display: contents; }
 </style>
 <body>
 
@@ -1009,12 +1015,13 @@ function renderGrid(){
     data.sort((a,b)=>(isAmt?a.amtRank:a.qtyRank)-(isAmt?b.amtRank:b.qtyRank));
     data.forEach(p=>{ p._displayRank = isAmt ? p.amtRank : p.qtyRank; });
   }
-  document.getElementById('productGrid').innerHTML = data.map((p,i)=>{
-    const card = buildCard(p,currentTab);
-    // 每10個卡片後插入列印分頁標記（第10、20個之後）
-    const breakTag = (i===9 || i===19) ? '<div class="print-page-break"></div>' : '';
-    return card + breakTag;
-  }).join('');
+  // 將卡片依每頁10個分組，各自包成一個 print-page 容器
+  const cardsHtml = data.map(p=>buildCard(p,currentTab));
+  const pages = [];
+  for(let i=0; i<cardsHtml.length; i+=10){
+    pages.push('<div class="print-page">' + cardsHtml.slice(i,i+10).join('') + '</div>');
+  }
+  document.getElementById('productGrid').innerHTML = pages.join('');
   document.getElementById('sectionLabel').textContent = tabLabels[currentTab];
   // 更新列印標題
   const phLabels = {
