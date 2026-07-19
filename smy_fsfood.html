@@ -416,6 +416,33 @@
   }
   footer strong { color: #fff; font-weight: 500; }
 
+  /* ── LINE BADGE ── */
+  .line-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #06C755;
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin: 14px 0 4px;
+    transition: filter 0.15s ease, transform 0.15s ease;
+  }
+  .line-badge:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .line-badge svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .line-badge .line-id { opacity: 0.85; font-weight: 400; font-size: 12px; }
+  .line-badge-wrap { text-align: center; }
+  .line-badge-hint {
+    display: block;
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 2px;
+  }
+
   /* ── HIDDEN ── */
   .cat-section { margin-bottom: 8px; }
   .cat-section.hidden { display: none; }
@@ -431,7 +458,7 @@
       <div class="brand-sub">SHING MAO YU ENTERPRISE CO., LTD. ／ 本明一山高級魚介專賣店</div>
     </div>
     <div class="header-meta">
-      <span>📅 2026.06.12 版</span>
+      <span>📅 2026.06.30 版</span>
       <span>📞 07-7880899</span>
       <span>✈️ 每週二・週五 空運到貨</span>
     </div>
@@ -606,7 +633,7 @@
         <div class="card-spec">600g／尾<br>自然解凍</div>
         <div class="card-price">
           <div class="price-label">參考價</div>
-          <div class="price-value">280</div>
+          <div class="price-value">310</div>
           <div class="price-unit">元／尾</div>
         </div>
       </div>
@@ -1286,8 +1313,20 @@
 
 <footer>
   <strong>新懋宇企業有限公司</strong>　SHING MAO YU ENTERPRISE CO., LTD.<br>
-  本明一山高級魚介專賣店　｜　Instagram: honmeiichizan　｜　LINE: @smyseafood<br>
+  本明一山高級魚介專賣店　｜　Instagram: honmeiichizan<br>
   營業時間：週一～週五 08:00–17:00　｜　每週二・週五 空運到貨　｜　☎ 07-7880899<br>
+
+  <div class="line-badge-wrap">
+    <a class="line-badge" href="https://lin.ee/69A4TkU" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.477 2 2 5.91 2 10.73c0 4.32 3.567 7.94 8.385 8.62.327.07.77.215.882.494.1.253.066.65.032.906l-.143.86c-.043.254-.2.99.866.54 1.066-.45 5.747-3.383 7.84-5.793C21.27 14.04 22 12.46 22 10.73 22 5.91 17.523 2 12 2z"/>
+      </svg>
+      <span>一按就加入官方LINE@</span>
+      <span class="line-id">@smyseafood</span>
+    </a>
+    <span class="line-badge-hint">點擊圖示開啟 LINE，加入好友即可線上諮詢</span>
+  </div>
+
   <br>
   <span style="font-size:11px;opacity:.65">本型錄價格為參考，以出貨當日報價單為準。如需詢價請聯絡業務。</span>
 </footer>
