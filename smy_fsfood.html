@@ -372,6 +372,23 @@
   .price-row .price-value {
     font-size: 15px;
   }
+  .price-row .row-badge {
+    font-size: 9px;
+    font-weight: 600;
+    background: #ffd700;
+    color: #7a5500;
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin-left: 4px;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+    line-height: 1.5;
+  }
+  .price-row .price-value.sold-out {
+    color: var(--ash);
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
 
   /* ── PHOTO UPLOAD ── */
   .upload-btn {
@@ -691,9 +708,9 @@
       <div class="card-footer">
         <div class="card-spec">1KG／盒<br>自然解凍</div>
         <div class="card-price price-multi">
-          <div class="price-row"><span class="size-label">XJ</span><span class="price-value" style="font-size:13px">2,600</span></div>
-          <div class="price-row"><span class="size-label">J</span><span class="price-value" style="font-size:13px">2,500</span></div>
-          <div class="price-row"><span class="size-label">XL</span><span class="price-value" style="font-size:13px">2,400</span></div>
+          <div class="price-row"><span class="size-label">XJ</span><span class="price-value sold-out" style="font-size:13px">2,600</span><span class="row-badge">補貨中</span></div>
+          <div class="price-row"><span class="size-label">J</span><span class="price-value sold-out" style="font-size:13px">2,500</span><span class="row-badge">補貨中</span></div>
+          <div class="price-row"><span class="size-label">XL</span><span class="price-value sold-out" style="font-size:13px">2,400</span><span class="row-badge">補貨中</span></div>
           <div class="price-row"><span class="size-label">L</span><span class="price-value" style="font-size:13px">2,100</span></div>
         </div>
       </div>
