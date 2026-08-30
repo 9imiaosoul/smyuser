@@ -71,16 +71,13 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
     display:flex;flex-direction:column}
   .photo{position:relative;aspect-ratio:1/1;background:#fff;
-    display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid #f2ede2;cursor:pointer}
-  .photo:hover .ph{color:var(--navy)}
-  .photo:hover .upov{opacity:1}
+    display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid #f2ede2}
   .photo img{width:100%;height:100%;object-fit:cover;display:block}
   .photo .ph{color:#c3bba8;font-size:12px;text-align:center;line-height:1.5;transition:color .12s}
   .photo .ph .cam{font-size:26px;display:block;margin-bottom:3px}
   .upov{position:absolute;inset:0;background:rgba(45,66,88,.5);color:#fff;font-size:13px;font-weight:700;
     display:flex;align-items:center;justify-content:center;gap:6px;opacity:0;transition:opacity .12s}
   .imgtools{position:absolute;bottom:8px;right:8px;display:flex;gap:6px;opacity:0;transition:opacity .12s}
-  .photo:hover .imgtools{opacity:1}
   .imgtools button{border:none;border-radius:16px;padding:4px 10px;font-size:11px;font-weight:700;
     cursor:pointer;background:rgba(255,255,255,.92);color:var(--navy);font-family:inherit;box-shadow:0 1px 4px rgba(0,0,0,.2)}
   .imgtools button.del{background:rgba(162,58,42,.92);color:#fff}
@@ -116,6 +113,7 @@
   .fbtn-web{background:#c0392b}
   .fbtn-fb{background:#1877f2}
   .fbtn-ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+  .fbtn-th{background:#000000}
   .lineBtnTop{margin-top:10px;padding:8px 16px;font-size:13px}
   .lineBtnTop .ic{width:17px;height:17px}
   .lineBtn .ic{width:19px;height:19px;fill:#fff}
@@ -134,7 +132,6 @@
 </style>
 </head>
 <body>
-<input type="file" id="imgInput" accept="image/*" style="display:none">
 <header>
   <div class="htop">
     <div class="brand">
@@ -163,8 +160,7 @@
 <div class="wrap">
   <div class="searchrow"><input id="search" class="search" placeholder="🔍 搜尋商品名稱、片假名、料理方式…"></div>
   <div id="content"><div class="sec-title"><h2>蔬菜植物</h2><span class="kana">野菜・植物</span></div><div class="grid"><div class="card">
-    <div class="photo" onclick="pickImage(&#39;大葉|／盒&#39;)" title="點擊上傳／更換圖片"><img src="" alt="大葉"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;大葉|／盒&#39;,event)">移除</button></div></div>
+    <div class="photo"><img src="" alt="大葉"></div>
     <div class="body">
       <div class="nm">大葉</div>
       <div class="kn">オオバ</div>
@@ -173,8 +169,7 @@
       <div class="divline"></div>
       <div class="foot"><div class="spec">／盒</div><div class="priceCol"><div class="plabel">參考價</div><span class="pv">390</span><div class="pu">元／盒</div></div></div>
     </div></div><div class="card">
-    <div class="photo" onclick="pickImage(&#39;舞菇|／盒&#39;)" title="點擊上傳／更換圖片"><img src="" alt="舞菇"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;舞菇|／盒&#39;,event)">移除</button></div></div>
+    <div class="photo"><img src="" alt="舞菇"></div>
     <div class="body">
       <div class="nm">舞菇</div>
       <div class="kn">マイタケ</div>
@@ -183,8 +178,7 @@
       <div class="divline"></div>
       <div class="foot"><div class="spec">／盒</div><div class="priceCol"><div class="plabel">參考價</div><span class="pv">220</span><div class="pu">元／盒</div></div></div>
     </div></div><div class="card">
-    <div class="photo" onclick="pickImage(&#39;綠楓葉|／盒&#39;)" title="點擊上傳／更換圖片"><img src="" alt="綠楓葉"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;綠楓葉|／盒&#39;,event)">移除</button></div></div>
+    <div class="photo"><img src="" alt="綠楓葉"></div>
     <div class="body">
       <div class="nm">綠楓葉</div>
       <div class="kn">青モミジ</div>
@@ -193,8 +187,7 @@
       <div class="divline"></div>
       <div class="foot"><div class="spec">／盒</div><div class="priceCol"><div class="plabel">參考價</div><span class="pv">270</span><div class="pu">元／盒</div></div></div>
     </div></div><div class="card">
-    <div class="photo" onclick="pickImage(&#39;小菊|／盒&#39;)" title="點擊上傳／更換圖片"><img src="" alt="小菊"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;小菊|／盒&#39;,event)">移除</button></div></div>
+    <div class="photo"><img src="" alt="小菊"></div>
     <div class="body">
       <div class="nm">小菊</div>
       <div class="kn">小菊</div>
@@ -203,8 +196,7 @@
       <div class="divline"></div>
       <div class="foot"><div class="spec">／盒</div><div class="priceCol"><div class="plabel">參考價</div><span class="pv">460</span><div class="pu">元／盒</div></div></div>
     </div></div><div class="card">
-    <div class="photo" onclick="pickImage(&#39;木之芽|／盒&#39;)" title="點擊上傳／更換圖片"><img src="" alt="木之芽"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;木之芽|／盒&#39;,event)">移除</button></div></div>
+    <div class="photo"><img src="" alt="木之芽"></div>
     <div class="body">
       <div class="nm">木之芽</div>
       <div class="kn">木の芽</div>
@@ -213,8 +205,7 @@
       <div class="divline"></div>
       <div class="foot"><div class="spec">／盒</div><div class="priceCol"><div class="plabel">參考價</div><span class="pv">845</span><div class="pu">元／盒</div></div></div>
     </div></div><div class="card">
-    <div class="photo" onclick="pickImage(&#39;茗荷|／盒&#39;)" title="點擊上傳／更換圖片"><img src="" alt="茗荷"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;茗荷|／盒&#39;,event)">移除</button></div></div>
+    <div class="photo"><img src="" alt="茗荷"></div>
     <div class="body">
       <div class="nm">茗荷</div>
       <div class="kn">ミョウガ</div>
@@ -223,8 +214,7 @@
       <div class="divline"></div>
       <div class="foot"><div class="spec">／盒</div><div class="priceCol"><div class="plabel">參考價</div><span class="pv">160</span><div class="pu">元／盒</div></div></div>
     </div></div><div class="card">
-    <div class="photo" onclick="pickImage(&#39;紫蘇花(穗紫蘇)|／盒&#39;)" title="點擊上傳／更換圖片"><img src="" alt="紫蘇花(穗紫蘇)"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;紫蘇花(穗紫蘇)|／盒&#39;,event)">移除</button></div></div>
+    <div class="photo"><div class="ph"><span class="cam">🐟</span>暫無圖片</div></div>
     <div class="body">
       <div class="nm">紫蘇花(穗紫蘇)</div>
       <div class="kn">穂紫蘇</div>
@@ -233,8 +223,7 @@
       <div class="divline"></div>
       <div class="foot"><div class="spec">／盒</div><div class="priceCol"><div class="plabel">參考價</div><span class="pv">230</span><div class="pu">元／盒</div></div></div>
     </div></div><div class="card">
-    <div class="photo" onclick="pickImage(&#39;大黑本菇|／盒&#39;)" title="點擊上傳／更換圖片"><img src="" alt="大黑本菇"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;大黑本菇|／盒&#39;,event)">移除</button></div></div>
+    <div class="photo"><img src="" alt="大黑本菇"></div>
     <div class="body">
       <div class="nm">大黑本菇</div>
       <div class="kn">ブナシメジ</div>
@@ -243,8 +232,7 @@
       <div class="divline"></div>
       <div class="foot"><div class="spec">／盒</div><div class="priceCol"><div class="plabel">參考價</div><span class="pv">390</span><div class="pu">元／盒</div></div></div>
     </div></div><div class="card">
-    <div class="photo" onclick="pickImage(&#39;山葵(青種)|／KG&#39;)" title="點擊上傳／更換圖片"><img src="" alt="山葵(青種)"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage(&#39;山葵(青種)|／KG&#39;,event)">移除</button></div></div>
+    <div class="photo"><div class="ph"><span class="cam">🐟</span>暫無圖片</div></div>
     <div class="body">
       <div class="nm">山葵(青種)</div>
       <div class="kn">ワサビ(青種)</div>
@@ -263,13 +251,17 @@
       <svg class="ic" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 5.64 2 10.12c0 4.02 3.55 7.39 8.35 8.03.32.07.77.21.88.49.1.25.06.64.03.9l-.14.85c-.04.25-.2.98.86.53s5.71-3.36 7.79-5.76C21.34 13.4 22 11.86 22 10.12 22 5.64 17.52 2 12 2z"></path></svg>
       加入官方 LINE @820oyssi
     </a>
-    <a class="fbtn fbtn-fb" href="https://www.facebook.com/HONMEIICHIZAN/" target="_blank" rel="noopener">
+    <a class="fbtn fbtn-fb" href="https://www.facebook.com/share/19devKYXjx/?mibextid=wwXIfr" target="_blank" rel="noopener">
       <svg class="ic" viewBox="0 0 24 24"><path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.5c-1.49 0-1.96.93-1.96 1.89v2.25h3.32l-.53 3.49h-2.79V24C19.61 23.1 24 18.1 24 12.07z"></path></svg>
       Facebook
     </a>
-    <a class="fbtn fbtn-ig" href="https://www.instagram.com/honmeiichizan/" target="_blank" rel="noopener">
+    <a class="fbtn fbtn-ig" href="https://www.instagram.com/9ismytw/" target="_blank" rel="noopener">
       <svg class="ic" viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16zM12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.31-1.46.72-2.13 1.38C1.35 2.68.94 3.35.63 4.14.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.31.79.72 1.46 1.38 2.13.67.66 1.34 1.07 2.13 1.38.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56.79-.31 1.46-.72 2.13-1.38.66-.67 1.07-1.34 1.38-2.13.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91-.31-.79-.72-1.46-1.38-2.13C21.32 1.35 20.65.94 19.86.63 19.1.33 18.22.13 16.95.07 15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 100 12.32 6.16 6.16 0 000-12.32zM12 16a4 4 0 110-8 4 4 0 010 8zm6.41-10.85a1.44 1.44 0 100 2.88 1.44 1.44 0 000-2.88z"></path></svg>
       Instagram
+    </a>
+    <a class="fbtn fbtn-th" href="https://www.threads.com/@9ismytw" target="_blank" rel="noopener">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 013.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L7.734 7.847c.98-1.454 2.568-2.256 4.478-2.256h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.321.142 1.49.7 2.58 1.761 3.154 3.07.797 1.82.871 4.79-1.548 7.158-1.85 1.81-4.094 2.628-7.277 2.65Zm1.036-11.752c-.324 0-.66.01-1.008.031-1.833.103-2.974.946-2.91 2.121.062 1.229 1.418 1.8 2.723 1.73 1.2-.066 2.77-.534 3.032-3.7a10.397 10.397 0 00-1.837-.182z"></path></svg>
+      Threads
     </a>
   </div>
 </div></footer>
@@ -482,9 +474,10 @@ function saveImgs(){ try{ localStorage.setItem(IMG_STORE_KEY,JSON.stringify(IMGS
 function getImg(r){ return IMGS[imgKey(r)]||r[9]||""; }
 
 let pendingKey=null;
-function pickImage(key){ pendingKey=key; document.getElementById('imgInput').click(); }
+function pickImage(){} /* 圖片已鎖定，禁止上傳 */
 document.addEventListener('DOMContentLoaded',()=>{
   const inp=document.getElementById('imgInput');
+  if(!inp) return; /* 圖片已鎖定 */
   inp.addEventListener('change',e=>{
     const f=e.target.files&&e.target.files[0]; if(!f||!pendingKey){e.target.value='';return;}
     if(!f.type.startsWith('image/')){ alert('請選擇圖片檔'); e.target.value=''; return; }
@@ -506,7 +499,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     reader.readAsDataURL(f);
   });
 });
-function removeImage(key,ev){ ev.stopPropagation(); if(!confirm('移除這張圖片？')) return; delete IMGS[key]; saveImgs(); render(); }
+function removeImage(){} /* 圖片已鎖定，禁止移除 */
 
 function card(r){
   const jika=r[8]===1,pick=r[10]===1,restock=r[11]===1;
@@ -520,11 +513,10 @@ function card(r){
     ? `<div class="priceCol"><span class="pv spotv">時價</span><div class="pu">請洽詢</div></div>`
     : `<div class="priceCol"><div class="plabel">參考價</div><span class="pv">${r[7].toLocaleString()}</span><div class="pu">元／${r[5]}</div></div>`;
   const inner = src
-    ? `<img src="${src}" alt="${r[1]}"><div class="upov">📷 更換圖片</div>
-       <div class="imgtools"><button class="del" onclick="removeImage('${key}',event)">移除</button></div>`
-    : `<div class="ph"><span class="cam">🐟</span>點擊上傳圖片</div><div class="upov">📷 選擇圖片</div>`;
+    ? `<img src="${src}" alt="${r[1]}">`
+    : `<div class="ph"><span class="cam">🐟</span>暫無圖片</div>`;
   return `<div class="card">
-    <div class="photo" onclick="pickImage('${key}')" title="點擊上傳／更換圖片">${inner}${tag}${rstag}</div>
+    <div class="photo">${inner}${tag}${rstag}</div>
     <div class="body">
       <div class="nm">${r[1]}</div>
       <div class="kn">${r[2]}</div>
