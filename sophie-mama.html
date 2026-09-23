@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>媽媽團購帳本</title>
+<title>蘇菲媽咪團購帳本</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
@@ -125,7 +125,7 @@ td input:disabled{background:var(--sunk);color:var(--muted)}
 <body>
 <header class="top">
   <div class="bar1">
-    <h1 class="brand">媽媽團購帳本<small>進貨・銷售・庫存・毛利</small></h1>
+    <h1 class="brand">蘇菲媽咪團購帳本<small>進貨・銷售・庫存・毛利</small></h1>
     <span class="sync" id="sync"><span class="dot" id="syncDot"></span><span id="syncTxt">—</span><button class="x" id="btnRefresh" hidden>重新整理</button></span>
     <div class="period" id="period" hidden>
       <label for="selYear" class="mut" style="font-size:13px">年度</label>
@@ -229,9 +229,10 @@ function stockTable(asOf){
   const base={},baseDate={};
   for(const d of Object.keys(S.counts).sort()){if(d>=asOf)break;const c=S.counts[d].counts||{};for(const pid in c){base[pid]=+c[pid];baseDate[pid]=d;}}
   const R={};const g=pid=>R[pid]||(R[pid]={inQ:0,retQ:0,sold:0});
+  const seen=new Set(Object.keys(base));for(const p of Object.values(S.purchases))for(const l of p.lines||[])seen.add(l.pid);
   for(const [d,p] of Object.entries(S.purchases)){if(d>asOf)continue;for(const l of p.lines||[]){if(baseDate[l.pid]&&d<=baseDate[l.pid])continue;const x=g(l.pid);if(l.type==='ret')x.retQ+=+l.qty;else x.inQ+=+l.qty;}}
   for(const [d,s] of Object.entries(S.sales)){if(d>asOf)continue;for(const l of s.lines||[]){if(baseDate[l.pid]&&d<=baseDate[l.pid])continue;g(l.pid).sold+=+l.qty;}}
-  return prods(true).map(p=>{const x=R[p.id]||{inQ:0,retQ:0,sold:0};const b=base[p.id]||0;return {...p,base:b,baseDate:baseDate[p.id]||'',...x,expect:b+x.inQ-x.retQ-x.sold};}).filter(r=>!r.off||r.expect||r.inQ||r.sold);
+  return prods(true).map(p=>{const x=R[p.id]||{inQ:0,retQ:0,sold:0};const b=base[p.id]||0;return {...p,base:b,baseDate:baseDate[p.id]||'',...x,expect:b+x.inQ-x.retQ-x.sold};}).filter(r=>seen.has(r.id));
 }
 
 /* ---------- 頁首 ---------- */
@@ -465,7 +466,8 @@ function recalcS(){const d=UI.sDate,dr=sDraft(d),old={};(S.sales[d]&&S.sales[d].
 /* 庫存盤點 */
 function cDraft(d){if(!UI.drafts.c[d]){const doc=S.counts[d];UI.drafts.c[d]={dirty:false,c:doc?Object.fromEntries(Object.entries(doc.counts).map(([k,v])=>[k,String(v)])):{}};}return UI.drafts.c[d];}
 V.count=()=>{
-  const d=UI.cDate,dr=cDraft(d),rows=stockTable(d),doc=S.counts[d]||{counts:{},who:{}};
+  const d=UI.cDate,dr=cDraft(d),all=stockTable(d),doc=S.counts[d]||{counts:{},who:{}};
+  const rows=all.filter(r=>countVisible(r,dr,doc));const hidden=all.length-rows.length;
   let val=0;if(isOwner())rows.forEach(r=>val+=Math.max(0,r.expect)*(+r.cost||0));
   const done=Object.keys(doc.counts).length;
   const hist=isOwner()?countHistory():'';
@@ -477,15 +479,18 @@ V.count=()=>{
       <div class="row"><label for="cDate"><b>盤點日期</b></label><input type="date" id="cDate" value="${d}">${done?`<span class="pill in">已送出 ${done} 項</span>`:''}${dr.dirty?'<span class="pill ret">尚未送出</span>':''}</div>
       <input type="search" id="cFind" placeholder="搜尋商品" aria-label="搜尋商品" style="width:180px">
     </div>
-    <div class="totals"><span>品項 <b>${rows.length}</b></span>${isOwner()?`<span>應有庫存金額（成本） <b>${fmt(val)}</b></span>`:''}</div>
+    <div class="row" style="justify-content:space-between"><div class="totals"><span>要盤點的品項 <b>${rows.length}</b></span>${isOwner()?`<span>應有庫存金額（成本） <b>${fmt(val)}</b></span>`:''}</div>
+      <label class="row" style="font-size:13px"><input type="checkbox" id="cZero" ${UI.showZero?'checked':''}> 顯示數量為 0 的商品${hidden?`（${hidden} 項已隱藏）`:''}</label></div>
     ${rows.length?`<div class="tw" style="max-height:62vh"><table><thead><tr><th>商品</th><th class="hm">上次盤點</th><th class="n hm">之後進貨</th><th class="n hm">退貨</th><th class="n hm">賣出</th><th class="n">應有數量</th><th class="n">實點數量</th><th class="n">差異</th><th>盤點人</th></tr></thead><tbody id="cBody">
     ${rows.map(r=>{const c=dr.c[r.id];const has=c!==undefined&&c!=='';const diff=has?(+c-r.expect):null;const locked=!isOwner()&&(r.id in doc.counts);
       return `<tr data-name="${esc(r.name)}"><td class="wrap">${esc(r.name)}</td><td class="mut hm">${r.baseDate?r.baseDate.slice(5).replace('-','/')+'：'+fmt(r.base):'—'}</td><td class="n hm">${r.inQ||''}</td><td class="n hm">${r.retQ||''}</td><td class="n hm">${r.sold||''}</td><td class="n"><b class="${r.expect<0?'neg':''}">${fmt(r.expect)}</b></td><td class="n"><input class="q" inputmode="decimal" data-cp="${r.id}" data-exp="${r.expect}" id="cq_${r.id}" value="${has?esc(c):''}" ${locked?'disabled':''}></td><td class="n" id="cd_${r.id}">${diff===null?'':`<span class="${diff<0?'neg':diff>0?'pos':'mut'}">${diff>0?'+':''}${fmt(diff)}</span>`}</td><td class="mut">${esc(doc.who&&doc.who[r.id]||'')}</td></tr>`;}).join('')}
-    </tbody></table></div>`:`<p class="mut">還沒有商品。</p>`}
-    <div class="row"><button class="b p" data-act="csave">送出盤點結果</button>${isOwner()?'<button class="b" data-act="cfill">空白的都填入應有數量</button>':''}${dr.dirty?'<button class="x" data-act="creset">放棄修改</button>':''}</div>
+    </tbody></table></div>`:`<p class="mut">${all.length?'目前沒有應該在店裡的商品。':'還沒有進貨紀錄。'}</p>`}
+    <div class="row"><button class="b p" data-act="csave">送出盤點結果</button>${isOwner()?'<button class="b" data-act="cfill">空白的都填入應有數量</button><button class="b" data-act="cfill0">空白的都填 0（店裡已經沒有）</button>':''}${dr.dirty?'<button class="x" data-act="creset">放棄修改</button>':''}</div>
   </div>
   ${hist}`;
 };
+/* 只列出「應有數量大於 0」的商品；這天已經填過或送出的也保留，勾選「顯示數量為 0」則全部列出 */
+function countVisible(r,dr,doc){if(UI.showZero||r.expect>0)return true;const c=dr.c[r.id];return (r.id in doc.counts)||(c!==undefined&&c!=='');}
 function countHistory(){
   const ds=Object.keys(S.counts).sort().reverse().slice(0,30);if(!ds.length)return '';
   return `<div style="margin-top:18px"><h3>盤點紀錄（最近 30 次）</h3><div class="tw"><table><thead><tr><th>日期</th><th>盤點人</th><th class="n">品項</th><th class="n">有差異</th><th class="n">短少數量</th><th class="n">短少金額（成本）</th></tr></thead><tbody>
@@ -612,6 +617,7 @@ $('#view').addEventListener('change',async e=>{
   if(t.id==='pDate'){UI.pDate=t.value||T;UI.year=+UI.pDate.slice(0,4);UI.month=+UI.pDate.slice(5,7);render();return;}
   if(t.id==='sDate'){UI.sDate=t.value||T;render();return;}
   if(t.id==='cDate'){UI.cDate=t.value||T;render();return;}
+  if(t.id==='cZero'){UI.showZero=t.checked;render();return;}
   if(t.dataset.pi!=null&&t.dataset.f==='name'){const l=pDraft(UI.pDate).lines[+t.dataset.pi];const pid=findPid(t.value);if(pid&&!(+l.cost)){l.cost=S.products[pid].cost;const c=document.getElementById('pc'+t.dataset.pi);if(c)c.value=l.cost;}recalcP(+t.dataset.pi);}
   if(t.dataset.pi!=null&&t.dataset.f==='type'){recalcP(+t.dataset.pi);}
   if(t.dataset.ip){const id=t.dataset.ip,f=t.dataset.f;const p={...S.products[id]};
@@ -643,7 +649,7 @@ $('#view').addEventListener('click',async e=>{
     for(const k in dr.c){if(dr.c[k]===''||dr.c[k]==null)continue;if(!isOwner()&&k in doc.counts)continue;send[k]=+dr.c[k];}
     if(!isOwner()&&!Object.keys(send).length){toast('沒有新填的數量');return;}
     if(await api('saveCount',{date:d,counts:send},'盤點已送出'))delete UI.drafts.c[d];render();}
-  else if(a==='cfill'){const dr=cDraft(UI.cDate);stockTable(UI.cDate).forEach(r=>{if(dr.c[r.id]===undefined||dr.c[r.id]==='')dr.c[r.id]=String(r.expect);});dr.dirty=true;render();}
+  else if(a==='cfill'||a==='cfill0'){const dr=cDraft(UI.cDate),doc=S.counts[UI.cDate]||{counts:{}};stockTable(UI.cDate).filter(r=>countVisible(r,dr,doc)).forEach(r=>{if(dr.c[r.id]===undefined||dr.c[r.id]==='')dr.c[r.id]=a==='cfill0'?'0':String(r.expect);});dr.dirty=true;render();}
   else if(a==='creset'){delete UI.drafts.c[UI.cDate];render();}
   else if(a==='cgo'){UI.cDate=b.dataset.d;render();window.scrollTo(0,0);}
   else if(a==='rvsave'){const v=$('#rvAmt').value.trim();if(v===''||isNaN(+v.replace(/,/g,''))){toast('請輸入營業額數字');return;}
