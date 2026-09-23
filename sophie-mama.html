@@ -137,6 +137,7 @@ td input:disabled{background:var(--sunk);color:var(--muted)}
   <nav class="tabs" id="tabs" hidden>
     <button data-tab="dash" data-owner>營業統計</button>
     <button data-tab="buy" data-owner>進貨／退貨</button>
+    <button data-tab="pay" data-owner>貨款</button>
     <button data-tab="sell">每日銷售</button>
     <button data-tab="count">庫存盤點</button>
     <button data-tab="items" data-owner>商品明細</button>
@@ -166,7 +167,7 @@ const byName=(a,b)=>String(a.name).localeCompare(String(b.name),'zh-Hant');
 const EXP_CATS=['房租','水電','薪資','包材','運費','平台／手續費','其他'];
 const ls={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}};
 
-let S={products:{},purchases:{},sales:{},expenses:{},customers:{},counts:{}};
+let S={products:{},purchases:{},sales:{},expenses:{},customers:{},counts:{},payments:[],payStart:'',payRate:1,revenue:{}};
 const T=tw();
 const UI={tab:'sell',year:+T.slice(0,4),month:+T.slice(5,7),pDate:T,sDate:T,cDate:T,dashMonth:+T.slice(5,7),drafts:{p:{},s:{},c:{}}};
 let token=ls.get('gb_token'), me=null, loaded=false, busy=0;
@@ -190,7 +191,7 @@ async function api(action,payload,okMsg){
   }catch(e){toast('連線失敗，請確認網路後再試一次');return false;}
   finally{busy--;setSync();}
 }
-function logout(msg){token=null;me=null;loaded=false;ls.set('gb_token',null);ls.set('gb_user',null);S={products:{},purchases:{},sales:{},expenses:{},customers:{},counts:{}};UI.drafts={p:{},s:{},c:{}};render();if(msg)toast(msg);}
+function logout(msg){token=null;me=null;loaded=false;ls.set('gb_token',null);ls.set('gb_user',null);S={products:{},purchases:{},sales:{},expenses:{},customers:{},counts:{},payments:[],payStart:'',revenue:{}};UI.drafts={p:{},s:{},c:{}};render();if(msg)toast(msg);}
 
 /* ---------- 通用 ---------- */
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2600);}
@@ -200,16 +201,27 @@ function findPid(name){name=String(name).trim();for(const [id,p] of Object.entri
 function matchProduct(raw){raw=String(raw).trim();let best=null,len=0;for(const [id,p] of Object.entries(S.products)){const n=p.name;if(n&&raw.startsWith(n)&&n.length>len){best=id;len=n.length;}}return best;}
 
 /* ---------- 彙總 ---------- */
+/* 只輸入營業總額的日子，用「進貨商品的平均毛利率」估算銷貨成本 */
+function estMargin(){let r=0,g=0;for(const p of Object.values(S.purchases))for(const l of p.lines||[]){if(l.type==='ret')continue;const pr=(S.products[l.pid]||{}).price;if(pr&&l.cost){r+=l.qty*pr;g+=l.qty*(pr-l.cost);}}
+  if(r)return g/r;let n=0,m=0;for(const p of Object.values(S.products))if(p.price&&p.cost){n++;m+=(p.price-p.cost)/p.price;}return n?m/n:null;}
 function dayAgg(){
-  const D={};const g=d=>D[d]||(D[d]={rev:0,cogs:0,pin:0,pret:0});
-  for(const [d,s] of Object.entries(S.sales))for(const l of s.lines||[]){const x=g(d);x.rev+=l.qty*l.price;x.cogs+=l.qty*l.cost;}
+  const D={};const g=d=>D[d]||(D[d]={irev:0,icogs:0,man:null,rev:0,cogs:0,pin:0,pret:0,est:false,unk:false});
+  for(const [d,s] of Object.entries(S.sales))for(const l of s.lines||[]){const x=g(d);x.irev+=l.qty*l.price;x.icogs+=l.qty*l.cost;}
   for(const [d,p] of Object.entries(S.purchases))for(const l of p.lines||[]){const x=g(d);if(l.type==='ret')x.pret+=l.qty*l.cost;else x.pin+=l.qty*l.cost;}
+  for(const [d,r] of Object.entries(S.revenue||{})){g(d).man=+r.amount||0;}
+  const EM=estMargin();
+  for(const x of Object.values(D)){
+    if(x.man===null){x.rev=x.irev;x.cogs=x.icogs;continue;}
+    x.rev=x.man;const extra=Math.max(0,x.man-x.irev);
+    if(!extra){x.cogs=x.icogs;continue;}
+    if(EM===null){x.cogs=x.icogs+extra;x.unk=true;}else{x.cogs=x.icogs+extra*(1-EM);x.est=true;}
+  }
   return D;
 }
 function expOf(ym){const e=S.expenses[ym];return e&&e.items?e.items.reduce((a,i)=>a+(+i.amount||0),0):0;}
 function monthAgg(Y,D){
   const M=[];for(let m=1;m<=12;m++)M.push({m,rev:0,cogs:0,pin:0,pret:0,exp:expOf(Y+'-'+pad(m))});
-  for(const [d,x] of Object.entries(D)){if(+d.slice(0,4)!==Y)continue;const o=M[+d.slice(5,7)-1];o.rev+=x.rev;o.cogs+=x.cogs;o.pin+=x.pin;o.pret+=x.pret;}
+  for(const [d,x] of Object.entries(D)){if(+d.slice(0,4)!==Y)continue;const o=M[+d.slice(5,7)-1];o.rev+=x.rev;o.cogs+=x.cogs;o.pin+=x.pin;o.pret+=x.pret;if(x.est||x.unk)o.est=true;}
   M.forEach(o=>{o.gp=o.rev-o.cogs;o.spend=o.pin-o.pret+o.exp;o.net=o.rev-o.spend;});
   return M;
 }
@@ -259,6 +271,7 @@ V.dash=()=>{
     return `<rect x="${x}" y="${H-pb-h}" width="${bwid}" height="${h}" fill="var(--bar)" rx="2"/><rect x="${x}" y="${H-pb-hg}" width="${bwid}" height="${hg}" fill="var(--accent)" rx="2"/><text x="${x+bwid/2}" y="${H-6}" text-anchor="middle" font-size="11" fill="${o.m===UI.dashMonth?'var(--accent)':'var(--muted)'}">${o.m}月</text>`;}).join('');
   const dm=UI.dashMonth,ym=UI.year+'-'+pad(dm);
   const days=Object.keys(D).filter(d=>d.startsWith(ym)).sort();
+  const anyEst=M.some(o=>o.est);const PB=payBalance();const em=estMargin();const EMs=em===null?'（無資料）':(em*100).toFixed(1)+'%';
   const dsum=days.reduce((a,d)=>{const x=D[d];a.rev+=x.rev;a.cogs+=x.cogs;a.pin+=x.pin;a.pret+=x.pret;return a;},{rev:0,cogs:0,pin:0,pret:0});
   return `
   <h2>${UI.year} 年營業統計</h2>
@@ -266,24 +279,26 @@ V.dash=()=>{
   <div class="stack">
     <div class="kpis">
       <div class="kpi"><div class="l">年營業額</div><div class="v">${fmt(Y.rev)}</div></div>
-      <div class="kpi"><div class="l">年毛利額</div><div class="v ${Y.gp<0?'neg':''}">${fmt(Y.gp)}</div></div>
+      <div class="kpi"><div class="l">年毛利額${anyEst?'（含估算）':''}</div><div class="v ${Y.gp<0?'neg':''}">${fmt(Y.gp)}</div></div>
       <div class="kpi"><div class="l">年毛利率</div><div class="v">${pct(Y.gp,Y.rev)}</div></div>
       <div class="kpi"><div class="l">年支出</div><div class="v">${fmt(Y.spend)}</div></div>
       <div class="kpi"><div class="l">年收支結餘</div><div class="v ${Y.net<0?'neg':'pos'}">${fmt(Y.net)}</div></div>
+      ${PB.on?`<div class="kpi click" data-act="gopay" style="cursor:pointer"><div class="l">貨款餘額</div><div class="v ${PB.balance<0?'neg':''}">${fmt(PB.balance)}</div></div>`:''}
     </div>
+    ${anyEst?`<p class="mut" style="font-size:12.5px;margin:0">「估」＝那天只輸入營業總額、沒有登錄品項，銷貨成本是用進貨商品的平均毛利率 ${EMs} 估算的。品項登錄越完整，毛利越準。</p>`:''}
     <div class="panel chart">
       <div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">每月營業額與毛利</h3><div class="legend"><span><i style="background:var(--bar)"></i>營業額</span><span><i style="background:var(--accent)"></i>毛利</span></div></div>
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每月營業額長條圖">${grid}${bars}</svg>
     </div>
     <div class="tw"><table>
       <thead><tr><th>月份</th><th class="n">營業額</th><th class="n">銷貨成本</th><th class="n">毛利額</th><th class="n">毛利率</th><th class="n">進貨</th><th class="n">退貨</th><th class="n">雜支</th><th class="n">單月支出</th><th class="n">收支結餘</th></tr></thead>
-      <tbody>${M.map(o=>`<tr class="click ${o.m===dm?'sel':''}" data-act="dm" data-m="${o.m}"><td>${o.m} 月</td><td class="n">${fmt(o.rev)}</td><td class="n">${fmt(o.cogs)}</td><td class="n ${o.gp<0?'neg':''}">${fmt(o.gp)}</td><td class="n">${pct(o.gp,o.rev)}</td><td class="n">${fmt(o.pin)}</td><td class="n">${o.pret?'−'+fmt(o.pret):'0'}</td><td class="n">${fmt(o.exp)}</td><td class="n">${fmt(o.spend)}</td><td class="n ${o.net<0?'neg':'pos'}">${fmt(o.net)}</td></tr>`).join('')}</tbody>
+      <tbody>${M.map(o=>`<tr class="click ${o.m===dm?'sel':''}" data-act="dm" data-m="${o.m}"><td>${o.m} 月</td><td class="n">${fmt(o.rev)}</td><td class="n">${fmt(o.cogs)}</td><td class="n ${o.gp<0?'neg':''}">${fmt(o.gp)}${o.est?' <span class="pill ret">估</span>':''}</td><td class="n">${pct(o.gp,o.rev)}</td><td class="n">${fmt(o.pin)}</td><td class="n">${o.pret?'−'+fmt(o.pret):'0'}</td><td class="n">${fmt(o.exp)}</td><td class="n">${fmt(o.spend)}</td><td class="n ${o.net<0?'neg':'pos'}">${fmt(o.net)}</td></tr>`).join('')}</tbody>
       <tfoot><tr><td>全年</td><td class="n">${fmt(Y.rev)}</td><td class="n">${fmt(Y.cogs)}</td><td class="n">${fmt(Y.gp)}</td><td class="n">${pct(Y.gp,Y.rev)}</td><td class="n">${fmt(Y.pin)}</td><td class="n">${Y.pret?'−'+fmt(Y.pret):'0'}</td><td class="n">${fmt(Y.exp)}</td><td class="n">${fmt(Y.spend)}</td><td class="n">${fmt(Y.net)}</td></tr></tfoot>
     </table></div>
     <div>
       <h3>${dm} 月每日明細</h3>
       ${days.length?`<div class="tw"><table><thead><tr><th>日期</th><th>星期</th><th class="n">單日營業額</th><th class="n">毛利</th><th class="n">毛利率</th><th class="n">進貨</th><th class="n">退貨</th></tr></thead><tbody>
-      ${days.map(d=>{const x=D[d];return `<tr><td>${d.slice(5).replace('-','/')}</td><td>${wk(d)}</td><td class="n">${fmt(x.rev)}</td><td class="n">${fmt(x.rev-x.cogs)}</td><td class="n">${pct(x.rev-x.cogs,x.rev)}</td><td class="n">${fmt(x.pin)}</td><td class="n">${x.pret?'−'+fmt(x.pret):''}</td></tr>`;}).join('')}
+      ${days.map(d=>{const x=D[d];return `<tr><td>${d.slice(5).replace('-','/')}</td><td>${wk(d)}</td><td class="n">${fmt(x.rev)}</td><td class="n">${fmt(x.rev-x.cogs)}${x.est||x.unk?' <span class="pill ret">估</span>':''}</td><td class="n">${pct(x.rev-x.cogs,x.rev)}</td><td class="n">${fmt(x.pin)}</td><td class="n">${x.pret?'−'+fmt(x.pret):''}</td></tr>`;}).join('')}
       </tbody><tfoot><tr><td colspan="2">合計</td><td class="n">${fmt(dsum.rev)}</td><td class="n">${fmt(dsum.rev-dsum.cogs)}</td><td class="n">${pct(dsum.rev-dsum.cogs,dsum.rev)}</td><td class="n">${fmt(dsum.pin)}</td><td class="n">${dsum.pret?'−'+fmt(dsum.pret):''}</td></tr></tfoot></table></div>`:`<p class="mut">這個月還沒有銷售或進貨紀錄。</p>`}
     </div>
   </div>`;
@@ -291,7 +306,16 @@ V.dash=()=>{
 function niceStep(max){const raw=max/4;const p=Math.pow(10,Math.floor(Math.log10(raw)));for(const m of [1,2,2.5,5,10])if(raw<=m*p)return m*p;return 10*p;}
 
 /* 進貨／退貨 */
+const CN_NUM='一二兩三四五六七八九十';
+const UNITS='箱|盒|合|包|袋|瓶|罐|條|顆|支|斤|個|片|組|份|粒|桶|串|隻|打|只|盤';
+function cleanName(n){let s=String(n).trim().replace(/^退\s*/,'');const P=[new RegExp('[\\s\\-－_]*\\d+(\\.\\d+)?\\s*[+＋]\\s*\\d+(\\.\\d+)?\\s*$'),new RegExp('[\\s\\-－_]*[\\d'+CN_NUM+']+(\\.\\d+)?\\s*('+UNITS+')\\s*$'),/[\s\-－_]*\d+(\.\d+)?\s*$/,/[+＋]\s*$/];
+  let prev;do{prev=s;for(const p of P){const t=s.replace(p,'').trim();if(t&&t!==s){s=t;break;}}}while(prev!==s);return s;}
+function vendors(){const v=new Set();for(const p of Object.values(S.purchases))for(const l of p.lines||[])if(l.vendor)v.add(l.vendor);(S.payments||[]).forEach(x=>{if(x.to)v.add(x.to);});return [...v].sort((a,b)=>a.localeCompare(b,'zh-Hant'));}
 function pDraft(d){if(!UI.drafts.p[d]){const doc=S.purchases[d];UI.drafts.p[d]={dirty:false,lines:doc?(doc.lines||[]).map(l=>({...l})):[]};}return UI.drafts.p[d];}
+function lineInfo(l){const pid=findPid(l.name);const p=pid?S.products[pid]:null;const price=p?(+p.price||0):0;const cost=+l.cost||0;return {price,unitGp:price?price-cost:null};}
+function pTotals(dr){let tin=0,tret=0,rev=0,gp=0,nop=0;dr.lines.forEach(l=>{const q=+l.qty||0,s=q*(+l.cost||0);if(l.type==='ret'){tret+=s;return;}tin+=s;if(!q)return;const i=lineInfo(l);if(i.price){rev+=q*i.price;gp+=q*i.unitGp;}else if(l.name)nop++;});return {tin,tret,rev,gp,nop};}
+function pTotHtml(dr){const t=pTotals(dr);const bal=payBalance();
+  return `<span>進貨 <b>${fmt(t.tin)}</b></span><span>退貨 <b>${fmt(t.tret)}</b></span><span>淨額 <b>${fmt(t.tin-t.tret)}</b></span><span class="mut">｜</span><span>預估售價總額 <b>${fmt(t.rev)}</b></span><span>預估毛利 <b class="${t.gp<0?'neg':''}">${fmt(t.gp)}</b>${t.rev?`（${pct(t.gp,t.rev)}）`:''}</span>${t.nop?`<span class="pill warn">${t.nop} 項未設售價</span>`:''}${bal.on?`<span class="mut">｜</span><span>目前貨款餘額 <b class="${bal.balance<0?'neg':''}">${fmt(bal.balance)}</b></span>`:''}`;}
 V.buy=()=>{
   const Y=UI.year,D=dayAgg();
   const mt=Array.from({length:12},(_,i)=>{const ym=Y+'-'+pad(i+1);let a=0,r=0;for(const [d,x] of Object.entries(D))if(d.startsWith(ym)){a+=x.pin;r+=x.pret;}return {m:i+1,a,r};});
@@ -301,59 +325,109 @@ V.buy=()=>{
     cal+=`<button class="${sun?'sun':''}" data-act="pday" data-d="${d}" aria-pressed="${d===UI.pDate}"><span class="d">${i}</span>${x.pin?`<span class="t">${fmt(x.pin)}</span>`:''}${x.pret?`<span class="r">退${fmt(x.pret)}</span>`:''}</button>`;}
   const d=UI.pDate,dr=pDraft(d);
   const opts=prods(true).map(p=>`<option value="${esc(p.name)}"></option>`).join('');
-  let tin=0,tret=0;dr.lines.forEach(l=>{const s=(+l.qty||0)*(+l.cost||0);if(l.type==='ret')tret+=s;else tin+=s;});
+  const vopts=vendors().map(v=>`<option value="${esc(v)}"></option>`).join('');
   return `
   <h2>進貨／退貨</h2>
-  <p class="lede">每月 12 格總覽，點日期登錄當天的進貨或退貨。可以直接從 Excel 複製整張補貨單貼上。</p>
+  <p class="lede">點日期登錄當天的補貨單。「進貨價」是跟廠商拿貨的價格，「店內售價」從商品明細帶出來，可以順便看每樣的毛利。每天的進貨淨額會自動從貨款扣抵。</p>
   <div class="stack">
     <div class="months">${mt.map(o=>`<button data-act="pm" data-m="${o.m}" aria-pressed="${o.m===UI.month}"><b>${o.m} 月</b><span>${fmt(o.a-o.r)}</span></button>`).join('')}</div>
-    <div class="two">
-      <div class="panel"><h3>${Y} 年 ${UI.month} 月</h3><div class="cal">${cal}</div>
-        <p class="mut" style="font-size:12px;margin:8px 0 0">綠字＝進貨金額　橘字＝退貨金額</p></div>
-      <div class="panel stack" style="gap:12px">
-        <div class="row"><label for="pDate"><b>登錄日期</b></label><input type="date" id="pDate" value="${d}"><span class="pill ${wk(d)==='日'?'warn':''}">星期${wk(d)}</span>${S.purchases[d]?'<span class="pill in">已有紀錄</span>':''}${dr.dirty?'<span class="pill ret">尚未儲存</span>':''}</div>
-        <datalist id="plist">${opts}</datalist>
-        <div class="tw"><table>
-          <thead><tr><th>類型</th><th>商品</th><th class="n">數量</th><th class="n">單價（成本）</th><th class="n">小計</th><th></th></tr></thead>
-          <tbody>${dr.lines.map((l,i)=>`<tr>
-            <td><select data-pi="${i}" data-f="type" id="pt${i}"><option value="in" ${l.type!=='ret'?'selected':''}>進貨</option><option value="ret" ${l.type==='ret'?'selected':''}>退貨</option></select></td>
-            <td><input list="plist" data-pi="${i}" data-f="name" id="pn${i}" value="${esc(l.name)}" placeholder="商品名稱" style="min-width:170px"></td>
-            <td class="n"><input class="q" inputmode="decimal" data-pi="${i}" data-f="qty" id="pq${i}" value="${esc(l.qty)}"></td>
-            <td class="n"><input class="m" inputmode="decimal" data-pi="${i}" data-f="cost" id="pc${i}" value="${esc(l.cost)}"></td>
-            <td class="n" id="ps${i}">${l.type==='ret'?'−':''}${fmt((+l.qty||0)*(+l.cost||0))}</td>
-            <td><button class="x" data-act="pdel" data-i="${i}" aria-label="刪除這列">刪除</button></td></tr>`).join('')||`<tr><td colspan="6" class="mut">這天還沒有資料，按「新增一列」或從 Excel 貼上。</td></tr>`}</tbody>
-        </table></div>
-        <div class="row" style="justify-content:space-between">
-          <div class="row"><button class="b" data-act="padd">＋ 新增一列</button><button class="b" data-act="paddr">＋ 退貨一列</button></div>
-          <div class="totals" id="ptot"><span>進貨 <b>${fmt(tin)}</b></span><span>退貨 <b>${fmt(tret)}</b></span><span>淨額 <b>${fmt(tin-tret)}</b></span></div>
-        </div>
-        <label class="row" style="font-size:13px"><input type="checkbox" id="pUpd" checked> 儲存時以這次進貨單價更新商品成本</label>
-        <div class="row"><button class="b p" data-act="psave">儲存這天</button>${S.purchases[d]?'<button class="x" data-act="pwipe">刪除整天紀錄</button>':''}${dr.dirty?'<button class="x" data-act="preset">放棄修改</button>':''}</div>
-        <details><summary>從 Excel／文字貼上補貨單</summary>
-          <p class="mut" style="font-size:12.5px">每行一個品項：商品名稱、數量、單價（小計可有可無）。以 Tab 或空白分隔。像「9/7補貨」這種日期行會自動設定日期；「小計」行會略過。</p>
-          <textarea id="pPaste" placeholder="小潘鳳凰酥12入12盒	12	295	3540"></textarea>
-          <div class="row" style="margin-top:8px"><button class="b" data-act="pparse">加入上方表格</button><label class="row" style="font-size:13px"><input type="checkbox" id="pRet"> 這批是退貨</label></div>
-        </details>
-      </div>
+    <div class="panel"><div class="row" style="justify-content:space-between"><h3 style="margin:0">${Y} 年 ${UI.month} 月</h3><span class="mut" style="font-size:12px">綠字＝進貨金額　橘字＝退貨金額</span></div><div class="cal" style="margin-top:8px">${cal}</div></div>
+    <div class="panel stack" style="gap:12px">
+      <div class="row"><label for="pDate"><b>登錄日期</b></label><input type="date" id="pDate" value="${d}"><span class="pill ${wk(d)==='日'?'warn':''}">星期${wk(d)}</span>${S.purchases[d]?'<span class="pill in">已有紀錄</span>':''}${dr.dirty?'<span class="pill ret">尚未儲存</span>':''}</div>
+      <datalist id="plist">${opts}</datalist><datalist id="vlist">${vopts}</datalist>
+      <div class="tw"><table>
+        <thead><tr><th>類型</th><th>廠商</th><th>品項</th><th class="n">數量</th><th class="n">進貨價</th><th class="n">小計</th><th class="n">店內售價</th><th class="n">每件毛利</th><th></th></tr></thead>
+        <tbody>${dr.lines.map((l,i)=>{const inf=lineInfo(l);return `<tr>
+          <td><select data-pi="${i}" data-f="type" id="pt${i}"><option value="in" ${l.type!=='ret'?'selected':''}>進貨</option><option value="ret" ${l.type==='ret'?'selected':''}>退貨</option></select></td>
+          <td><input list="vlist" data-pi="${i}" data-f="vendor" id="pv${i}" value="${esc(l.vendor||'')}" placeholder="（可空白）" style="width:110px"></td>
+          <td><input list="plist" data-pi="${i}" data-f="name" id="pn${i}" value="${esc(l.name)}" placeholder="品項名稱" style="min-width:170px"></td>
+          <td class="n"><input class="q" inputmode="decimal" data-pi="${i}" data-f="qty" id="pq${i}" value="${esc(l.qty)}"></td>
+          <td class="n"><input class="m" inputmode="decimal" data-pi="${i}" data-f="cost" id="pc${i}" value="${esc(l.cost)}"></td>
+          <td class="n" id="ps${i}">${l.type==='ret'?'−':''}${fmt((+l.qty||0)*(+l.cost||0))}</td>
+          <td class="n" id="pp${i}">${inf.price?fmt(inf.price):(l.name?'<span class="pill warn">未設</span>':'')}</td>
+          <td class="n" id="pg${i}">${inf.unitGp==null?'':`<span class="${inf.unitGp<0?'neg':''}">${fmt(inf.unitGp)}</span>`}</td>
+          <td><button class="x" data-act="pdel" data-i="${i}" aria-label="刪除這列">刪除</button></td></tr>`;}).join('')||`<tr><td colspan="9" class="mut">這天還沒有資料，按「新增一列」或從 Excel 貼上。</td></tr>`}</tbody>
+      </table></div>
+      <div class="row"><button class="b" data-act="padd">＋ 新增一列</button><button class="b" data-act="paddr">＋ 退貨一列</button></div>
+      <div class="totals" id="ptot">${pTotHtml(dr)}</div>
+      <label class="row" style="font-size:13px"><input type="checkbox" id="pUpd" checked> 儲存時以這次進貨價更新商品成本</label>
+      <div class="row"><button class="b p" data-act="psave">儲存這天</button>${S.purchases[d]?'<button class="x" data-act="pwipe">刪除整天紀錄</button>':''}${dr.dirty?'<button class="x" data-act="preset">放棄修改</button>':''}</div>
+      <details ${dr.lines.length?'':'open'}><summary>從 Excel 貼上補貨單</summary>
+        <p class="mut" style="font-size:12.5px">在廠商的 Excel 選取整張補貨單（品名、數量、進貨價、金額）複製後貼在下面。「9/8補貨」這種日期行會自動設定日期，「小計」會略過；只有名稱、沒有數量的行（例如「大元麻糬」）會當成<b>廠商分段</b>，套用到下面的品項。品名後面的數量（「薯餅20」「牛肉1箱20盒」）會自動去掉。</p>
+        <textarea id="pPaste" placeholder="四神湯20	20	90	1800"></textarea>
+        <div class="row" style="margin-top:8px"><button class="b" data-act="pparse">加入上方表格</button><label class="row" style="font-size:13px"><input type="checkbox" id="pRet"> 這批是退貨</label></div>
+      </details>
     </div>
   </div>`;
 };
-function recalcP(){const dr=pDraft(UI.pDate);let tin=0,tret=0;dr.lines.forEach((l,i)=>{const s=(+l.qty||0)*(+l.cost||0);if(l.type==='ret')tret+=s;else tin+=s;const c=document.getElementById('ps'+i);if(c)c.textContent=(l.type==='ret'?'−':'')+fmt(s);});const t=$('#ptot');if(t)t.innerHTML=`<span>進貨 <b>${fmt(tin)}</b></span><span>退貨 <b>${fmt(tret)}</b></span><span>淨額 <b>${fmt(tin-tret)}</b></span>`;}
+function recalcP(i){const dr=pDraft(UI.pDate);dr.lines.forEach((l,k)=>{const s=(+l.qty||0)*(+l.cost||0);const c=document.getElementById('ps'+k);if(c)c.textContent=(l.type==='ret'?'−':'')+fmt(s);
+    if(i===undefined||i===k){const inf=lineInfo(l);const pp=document.getElementById('pp'+k),pg=document.getElementById('pg'+k);if(pp)pp.innerHTML=inf.price?fmt(inf.price):(l.name?'<span class="pill warn">未設</span>':'');if(pg)pg.innerHTML=inf.unitGp==null?'':`<span class="${inf.unitGp<0?'neg':''}">${fmt(inf.unitGp)}</span>`;}});
+  const t=$('#ptot');if(t)t.innerHTML=pTotHtml(dr);}
 function parsePaste(txt,isRet){
-  const out=[];let date=null;
-  for(let line of txt.split(/\r?\n/)){line=line.trim();if(!line)continue;
-    const dm=line.match(/^(\d{1,2})[\/\-.](\d{1,2})/);
-    const cells=line.split(/\t|\s{2,}|,/).map(s=>s.trim()).filter(Boolean);
+  const out=[];let date=null,vendor='';
+  for(let line of txt.split(/\r?\n/)){line=line.replace(/\s+$/,'');if(!line.trim())continue;
+    const cells=line.split(/\t|\s{2,}|,/).map(s=>s.trim()).filter(Boolean);if(!cells.length)continue;
     let name=cells[0];let nums=cells.slice(1).map(s=>+s.replace(/[,$]/g,'')).filter(n=>!isNaN(n));
-    if(cells.length===1){const m=line.match(/^(.*?)\s+([\d.]+)\s+([\d.]+)(?:\s+[\d.]+)?$/);if(m){name=m[1];nums=[+m[2],+m[3]];}}
+    if(cells.length===1){const m=line.trim().match(/^(.*?)\s+([\d.]+)\s+([\d.]+)(?:\s+[\d.]+)?$/);if(m){name=m[1];nums=[+m[2],+m[3]];}}
+    if(/^[\d.,\s]+$/.test(name))continue;
     if(/小計|合計|總計/.test(name))continue;
-    if(!nums.length){if(dm){date=UI.year+'-'+pad(+dm[1])+'-'+pad(+dm[2]);}continue;}
-    if(!name)continue;
+    const dm=name.match(/^(\d{1,2})[\/\-.](\d{1,2})/);
+    if(dm&&(!nums.length||nums.every(n=>!n))){date=UI.year+'-'+pad(+dm[1])+'-'+pad(+dm[2]);continue;}
+    if(!nums.length||nums.every(n=>!n)){vendor=name;continue;}
     const pid=matchProduct(name);
-    out.push({type:isRet?'ret':'in',name:pid?S.products[pid].name:name,qty:nums[0]||0,cost:nums[1]!=null?nums[1]:(pid?S.products[pid].cost:0)});
+    const qty=nums[0]||0;let cost=nums[1]!=null?nums[1]:(pid?S.products[pid].cost:0);
+    const ret=isRet||qty<0||cost<0;
+    out.push({type:ret?'ret':'in',vendor,name:pid?S.products[pid].name:cleanName(name),qty:Math.abs(qty),cost:Math.abs(cost||0)});
   }
   return {date,lines:out};
 }
+
+/* 貨款 */
+function payBalance(){
+  const start=S.payStart||'';const pays=(S.payments||[]).filter(p=>p.date>=start);
+  const on=pays.length>0||!!start;let paid=0,used=0;pays.forEach(p=>paid+=+p.amount||0);
+  const rate=+S.payRate||1;
+  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;for(const l of p.lines||[])used+=(l.type==='ret'?-1:1)*l.qty*l.cost*rate;}
+  return {on,paid,used,balance:paid-used,start,rate};
+}
+V.pay=()=>{
+  const b=payBalance(),start=b.start;
+  const E=[];(S.payments||[]).filter(p=>p.date>=start).forEach(p=>E.push({date:p.date,k:0,pay:+p.amount||0,use:0,text:`付貨款${p.to?'給 '+esc(p.to):''}${p.note?'（'+esc(p.note)+'）':''}`,id:p.id,by:p.by}));
+  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;let n=0,r=0,v=0;(p.lines||[]).forEach(l=>{const s=l.qty*l.cost;if(l.type==='ret'){r++;v-=s;}else{n++;v+=s;}});if(v||n||r)E.push({date:d,k:1,pay:0,use:v*b.rate,text:`進貨 ${n} 項${r?`、退貨 ${r} 項`:''}${b.rate!==1?`（${fmt(v)} × ${b.rate}）`:''}`,d});}
+  E.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.k-b.k);let run=0;E.forEach(e=>{run+=e.pay-e.use;e.bal=run;});
+  const shown=E.slice().reverse();
+  const lastTo=(S.payments||[]).length?S.payments[S.payments.length-1].to:'';
+  return `<h2>貨款</h2>
+  <p class="lede">先付給廠商窗口的貨款記在這裡；每天的進貨淨額（進貨－退貨）會自動扣抵。餘額是負數代表進貨已經超過付出去的貨款，要再補付。</p>
+  <div class="stack">
+    <div class="kpis">
+      <div class="kpi"><div class="l">目前貨款餘額</div><div class="v ${b.balance<0?'neg':'pos'}">${fmt(b.balance)}</div></div>
+      <div class="kpi"><div class="l">已付貨款${start?'（'+start.slice(5).replace('-','/')+' 起）':''}</div><div class="v">${fmt(b.paid)}</div></div>
+      <div class="kpi"><div class="l">已扣抵進貨${b.rate!==1?'（含加成 '+((b.rate-1)*100).toFixed(1)+'%）':''}</div><div class="v">${fmt(b.used)}</div></div>
+    </div>
+    ${b.balance<0?`<div class="banner">進貨已超過付出的貨款 <b>${fmt(-b.balance)}</b> 元，需要再補付。</div>`:''}
+    <div class="panel stack" style="gap:12px">
+      <h3 style="margin:0">登錄付款</h3>
+      <div class="row">
+        <input type="date" id="yDate" value="${T}"><input id="yAmt" inputmode="decimal" placeholder="金額" style="width:120px">
+        <input id="yTo" list="vlist2" value="${esc(lastTo)}" placeholder="收款窗口" style="width:140px"><datalist id="vlist2">${vendors().map(v=>`<option value="${esc(v)}"></option>`).join('')}</datalist>
+        <input id="yNote" placeholder="備註（匯款、現金…）" style="flex:1 1 160px"><button class="b p" data-act="yadd">登錄付款</button>
+      </div>
+    </div>
+    <div class="panel row" style="justify-content:space-between">
+      <div><b>貨款起算日</b><div class="mut" style="font-size:12.5px">從這天開始的付款與進貨才計入餘額。例如媽媽 9/1 開始預付，就設 9/1，之前的舊進貨不會被扣。</div></div>
+      <div class="row"><input type="date" id="yStart" value="${esc(start)}"><button class="b" data-act="ystart">設定</button></div>
+    </div>
+    <div class="panel row" style="justify-content:space-between">
+      <div><b>貨款加成倍率</b><div class="mut" style="font-size:12.5px">窗口收貨款時在進貨金額上另外加的比例。例如進貨 218,371 × 1.022 ＝ 223,175，就填 1.022；沒有加成就填 1。</div></div>
+      <div class="row"><input id="yRate" inputmode="decimal" value="${esc(b.rate)}" style="width:90px"><button class="b" data-act="yrate">設定</button></div>
+    </div>
+    <div><h3>貨款明細</h3>
+    ${shown.length?`<div class="tw" style="max-height:60vh"><table><thead><tr><th>日期</th><th>摘要</th><th class="n">付款</th><th class="n">進貨扣抵</th><th class="n">餘額</th><th></th></tr></thead><tbody>
+    ${shown.map(e=>`<tr ${e.k?`class="click" data-act="ygo" data-d="${e.d}"`:''}><td>${e.date.slice(5).replace('-','/')}（${wk(e.date)}）</td><td class="wrap">${e.text}</td><td class="n pos">${e.pay?fmt(e.pay):''}</td><td class="n">${e.use?fmt(e.use):''}</td><td class="n ${e.bal<0?'neg':''}"><b>${fmt(e.bal)}</b></td><td>${e.k?'':`<button class="x" data-act="ydel" data-id="${e.id}">刪除</button>`}</td></tr>`).join('')}
+    </tbody></table></div>`:'<p class="mut">還沒有付款紀錄。先設定起算日，再登錄第一筆付款。</p>'}</div>
+  </div>`;
+};
 
 /* 每日銷售 */
 function sDraft(d){if(!UI.drafts.s[d]){const doc=S.sales[d];const q={};(doc&&doc.lines||[]).forEach(l=>q[l.pid]=l.qty);UI.drafts.s[d]={dirty:false,q};}return UI.drafts.s[d];}
@@ -368,8 +442,9 @@ V.sell=()=>{
     return `<tr data-name="${esc(p.name)}"><td class="wrap">${esc(p.name)}${!pr?' <span class="pill warn">未設售價</span>':''}</td><td class="n">${fmt(pr)}</td><td class="n"><input class="q" inputmode="decimal" data-sp="${p.id}" id="sq_${p.id}" value="${q||''}" placeholder="0"></td><td class="n" id="ss_${p.id}">${q?fmt(q*pr):''}</td></tr>`;}).join('');
   return `
   <h2>每日銷售</h2>
-  <p class="lede">輸入當天每個商品賣出的數量後按儲存。已經存過的日子會保留當時的售價。</p>
-  <div class="panel stack" style="gap:12px">
+  <p class="lede">${isOwner()?'上方直接輸入當天營業總額；下方可以再登錄各品項賣出數量（有登錄的話，毛利和庫存會更準）。':'輸入當天每個商品賣出的數量後按儲存。'}</p>
+  ${isOwner()?revPanel(d):''}
+  <div class="panel stack" style="gap:12px;margin-top:14px">
     <div class="row" style="justify-content:space-between">
       <div class="row"><label for="sDate"><b>銷售日期</b></label><input type="date" id="sDate" value="${d}"><span class="pill">星期${wk(d)}</span>${doc?`<span class="pill in">${esc(doc.by||'')} 已登錄</span>`:''}${dr.dirty?'<span class="pill ret">尚未儲存</span>':''}</div>
       <input type="search" id="sFind" placeholder="搜尋商品" aria-label="搜尋商品" style="width:180px">
@@ -379,6 +454,10 @@ V.sell=()=>{
     <div class="row"><button class="b p" data-act="ssave">儲存這天銷售</button>${doc&&isOwner()?'<button class="x" data-act="swipe">刪除這天紀錄</button>':''}${dr.dirty?'<button class="x" data-act="sreset">放棄修改</button>':''}</div>
   </div>`;
 };
+function revPanel(d){const r=(S.revenue||{})[d];const it=(S.sales[d]&&S.sales[d].lines||[]).reduce((a,l)=>a+l.qty*l.price,0);
+  return `<div class="panel stack" style="gap:10px"><div class="row" style="justify-content:space-between"><h3 style="margin:0">${d.slice(5).replace('-','/')}（${wk(d)}）營業額</h3>${r?`<span class="pill in">已存：${fmt(r.amount)}（${esc(r.by)} ${esc(String(r.at).slice(11))}）</span>`:'<span class="pill">尚未輸入</span>'}</div>
+  <div class="row"><input id="rvAmt" inputmode="decimal" placeholder="當天營業總額" value="${r?esc(r.amount):''}" style="width:160px;font-size:18px"><input id="rvNote" placeholder="備註（例：現金 8,000＋轉帳 3,200）" value="${r?esc(r.note):''}" style="flex:1 1 220px"><button class="b p" data-act="rvsave">儲存營業額</button>${r?'<button class="x" data-act="rvdel">清除</button>':''}</div>
+  ${it?`<p class="mut" style="font-size:12.5px;margin:0">下方品項合計 ${fmt(it)}${r?`，${Math.abs(r.amount-it)<1?'和營業額相符。':'和營業額差 '+fmt(r.amount-it)+'。'}`:'。'}</p>`:''}</div>`;}
 function recalcS(){const d=UI.sDate,dr=sDraft(d),old={};(S.sales[d]&&S.sales[d].lines||[]).forEach(l=>old[l.pid]=l);
   for(const pid in dr.q){const p=S.products[pid]||{};const q=+dr.q[pid]||0;const pr=old[pid]?old[pid].price:(+p.price||0);const c=document.getElementById('ss_'+pid);if(c)c.textContent=q?fmt(q*pr):'';}
   const t=$('#stot');if(t)t.innerHTML=saleTotals();}
@@ -519,7 +598,7 @@ $('#view').addEventListener('submit',async e=>{
 });
 $('#view').addEventListener('input',e=>{
   const t=e.target;
-  if(t.dataset.pi!=null){const dr=pDraft(UI.pDate);const l=dr.lines[+t.dataset.pi];l[t.dataset.f]=t.value;dr.dirty=true;recalcP();}
+  if(t.dataset.pi!=null){const dr=pDraft(UI.pDate);const l=dr.lines[+t.dataset.pi];l[t.dataset.f]=t.value;dr.dirty=true;recalcP(+t.dataset.pi);}
   else if(t.dataset.sp){const dr=sDraft(UI.sDate);dr.q[t.dataset.sp]=t.value;dr.dirty=true;recalcS();}
   else if(t.dataset.cp){const dr=cDraft(UI.cDate);dr.c[t.dataset.cp]=t.value;dr.dirty=true;const ex=+t.dataset.exp;const c=document.getElementById('cd_'+t.dataset.cp);if(c){if(t.value===''){c.innerHTML='';}else{const df=+t.value-ex;c.innerHTML=`<span class="${df<0?'neg':df>0?'pos':'mut'}">${df>0?'+':''}${fmt(df)}</span>`;}}}
   else if(t.id==='sFind')filterRows('#sBody',t.value);
@@ -533,8 +612,8 @@ $('#view').addEventListener('change',async e=>{
   if(t.id==='pDate'){UI.pDate=t.value||T;UI.year=+UI.pDate.slice(0,4);UI.month=+UI.pDate.slice(5,7);render();return;}
   if(t.id==='sDate'){UI.sDate=t.value||T;render();return;}
   if(t.id==='cDate'){UI.cDate=t.value||T;render();return;}
-  if(t.dataset.pi!=null&&t.dataset.f==='name'){const l=pDraft(UI.pDate).lines[+t.dataset.pi];const pid=findPid(t.value);if(pid&&!(+l.cost)){l.cost=S.products[pid].cost;const c=document.getElementById('pc'+t.dataset.pi);if(c)c.value=l.cost;recalcP();}}
-  if(t.dataset.pi!=null&&t.dataset.f==='type'){recalcP();}
+  if(t.dataset.pi!=null&&t.dataset.f==='name'){const l=pDraft(UI.pDate).lines[+t.dataset.pi];const pid=findPid(t.value);if(pid&&!(+l.cost)){l.cost=S.products[pid].cost;const c=document.getElementById('pc'+t.dataset.pi);if(c)c.value=l.cost;}recalcP(+t.dataset.pi);}
+  if(t.dataset.pi!=null&&t.dataset.f==='type'){recalcP(+t.dataset.pi);}
   if(t.dataset.ip){const id=t.dataset.ip,f=t.dataset.f;const p={...S.products[id]};
     if(f==='off')p.off=t.checked;else if(f==='cost'||f==='price')p[f]=+t.value||0;else p[f]=t.value.trim();
     if(f==='name'&&!p.name){t.value=S.products[id].name;return;}
@@ -550,7 +629,7 @@ $('#view').addEventListener('click',async e=>{
   else if(a==='dm'){UI.dashMonth=+b.dataset.m;UI.month=UI.dashMonth;render();}
   else if(a==='pm'){UI.month=+b.dataset.m;render();}
   else if(a==='pday'){UI.pDate=b.dataset.d;render();}
-  else if(a==='padd'||a==='paddr'){const dr=pDraft(UI.pDate);dr.lines.push({type:a==='paddr'?'ret':'in',name:'',qty:'',cost:''});dr.dirty=true;render();const n=document.getElementById('pn'+(dr.lines.length-1));if(n)n.focus();}
+  else if(a==='padd'||a==='paddr'){const dr=pDraft(UI.pDate);const lv=dr.lines.length?dr.lines[dr.lines.length-1].vendor||'':'';dr.lines.push({type:a==='paddr'?'ret':'in',vendor:lv,name:'',qty:'',cost:''});dr.dirty=true;render();const n=document.getElementById('pn'+(dr.lines.length-1));if(n)n.focus();}
   else if(a==='pdel'){const dr=pDraft(UI.pDate);dr.lines.splice(+b.dataset.i,1);dr.dirty=true;render();}
   else if(a==='preset'){delete UI.drafts.p[UI.pDate];render();}
   else if(a==='pparse'){const r=parsePaste($('#pPaste').value,$('#pRet').checked);if(!r.lines.length){toast('沒有讀到品項，請確認每行有名稱、數量、單價');return;}
@@ -567,6 +646,16 @@ $('#view').addEventListener('click',async e=>{
   else if(a==='cfill'){const dr=cDraft(UI.cDate);stockTable(UI.cDate).forEach(r=>{if(dr.c[r.id]===undefined||dr.c[r.id]==='')dr.c[r.id]=String(r.expect);});dr.dirty=true;render();}
   else if(a==='creset'){delete UI.drafts.c[UI.cDate];render();}
   else if(a==='cgo'){UI.cDate=b.dataset.d;render();window.scrollTo(0,0);}
+  else if(a==='rvsave'){const v=$('#rvAmt').value.trim();if(v===''||isNaN(+v.replace(/,/g,''))){toast('請輸入營業額數字');return;}
+    await doAndRender('saveRevenue',{date:UI.sDate,amount:+v.replace(/,/g,''),note:$('#rvNote').value.trim()},'已儲存 '+UI.sDate.slice(5).replace('-','/')+' 營業額');}
+  else if(a==='rvdel'){if(!armed(b))return;await doAndRender('saveRevenue',{date:UI.sDate,amount:''},'已清除營業額');}
+  else if(a==='gopay'){UI.tab='pay';render();window.scrollTo(0,0);}
+  else if(a==='yadd'){const amount=+$('#yAmt').value,date=$('#yDate').value;if(!amount||!date){toast('請輸入日期和金額');return;}
+    await doAndRender('addPayment',{date,amount,to:$('#yTo').value.trim(),note:$('#yNote').value.trim()},'已登錄付款 '+fmt(amount));}
+  else if(a==='ydel'){if(!armed(b))return;await doAndRender('deletePayment',{id:b.dataset.id},'已刪除付款');}
+  else if(a==='yrate'){const r=+$('#yRate').value;if(!(r>0)){toast('請填數字，例如 1.022');return;}await doAndRender('setPayRate',{rate:r},'已設定加成倍率 '+r);}
+  else if(a==='ystart'){await doAndRender('setPayStart',{date:$('#yStart').value},'已設定起算日');}
+  else if(a==='ygo'){UI.pDate=b.dataset.d;UI.year=+b.dataset.d.slice(0,4);UI.month=+b.dataset.d.slice(5,7);UI.tab='buy';render();window.scrollTo(0,0);}
   else if(a==='iadd'){const name=$('#nName').value.trim();if(!name){toast('請輸入商品名稱');return;}
     await doAndRender('saveProduct',{name,unit:$('#nUnit').value.trim(),cost:+$('#nCost').value||0,price:+$('#nPrice').value||0,off:false},'已新增 '+name);}
   else if(a==='idel'){if(!armed(b))return;await doAndRender('deleteProduct',{id:b.dataset.id},'已刪除商品（歷史紀錄保留）');}
