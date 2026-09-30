@@ -388,13 +388,15 @@ function payBalance(){
   const start=S.payStart||'';const pays=(S.payments||[]).filter(p=>p.date>=start);
   const on=pays.length>0||!!start;let paid=0,used=0;pays.forEach(p=>paid+=+p.amount||0);
   const rate=+S.payRate||1;
-  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;for(const l of p.lines||[])used+=(l.type==='ret'?-1:1)*l.qty*l.cost*rate;}
+  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;let v=0;for(const l of p.lines||[])v+=(l.type==='ret'?-1:1)*l.qty*l.cost;used+=payDay(v,rate);}
   return {on,paid,used,balance:paid-used,start,rate};
 }
+/* 每天的進貨淨額 × 加成倍率，小數無條件捨去（跟窗口二姐的算法一致） */
+function payDay(v,rate){return Math.floor(v*rate+1e-6);}
 V.pay=()=>{
   const b=payBalance(),start=b.start;
   const E=[];(S.payments||[]).filter(p=>p.date>=start).forEach(p=>E.push({date:p.date,k:0,pay:+p.amount||0,use:0,text:`付貨款${p.to?'給 '+esc(p.to):''}${p.note?'（'+esc(p.note)+'）':''}`,id:p.id,by:p.by}));
-  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;let n=0,r=0,v=0;(p.lines||[]).forEach(l=>{const s=l.qty*l.cost;if(l.type==='ret'){r++;v-=s;}else{n++;v+=s;}});if(v||n||r)E.push({date:d,k:1,pay:0,use:v*b.rate,text:`進貨 ${n} 項${r?`、退貨 ${r} 項`:''}${b.rate!==1?`（${fmt(v)} × ${b.rate}）`:''}`,d});}
+  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;let n=0,r=0,v=0;(p.lines||[]).forEach(l=>{const s=l.qty*l.cost;if(l.type==='ret'){r++;v-=s;}else{n++;v+=s;}});if(v||n||r)E.push({date:d,k:1,pay:0,use:payDay(v,b.rate),text:`進貨 ${n} 項${r?`、退貨 ${r} 項`:''}${b.rate!==1?`（${fmt(v)} × ${b.rate}）`:''}`,d});}
   E.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.k-b.k);let run=0;E.forEach(e=>{run+=e.pay-e.use;e.bal=run;});
   const shown=E.slice().reverse();
   const lastTo=(S.payments||[]).length?S.payments[S.payments.length-1].to:'';
@@ -420,7 +422,7 @@ V.pay=()=>{
       <div class="row"><input type="date" id="yStart" value="${esc(start)}"><button class="b" data-act="ystart">設定</button></div>
     </div>
     <div class="panel row" style="justify-content:space-between">
-      <div><b>貨款加成倍率</b><div class="mut" style="font-size:12.5px">窗口收貨款時在進貨金額上另外加的比例。例如進貨 218,371 × 1.022 ＝ 223,175，就填 1.022；沒有加成就填 1。</div></div>
+      <div><b>貨款加成倍率</b><div class="mut" style="font-size:12.5px">窗口收貨款時在進貨金額上另外加的比例。例如進貨 218,371 × 1.022 ＝ 223,175，就填 1.022；沒有加成就填 1。每天的扣抵金額小數無條件捨去。</div></div>
       <div class="row"><input id="yRate" inputmode="decimal" value="${esc(b.rate)}" style="width:90px"><button class="b" data-act="yrate">設定</button></div>
     </div>
     <div><h3>貨款明細</h3>
