@@ -167,7 +167,7 @@ const byName=(a,b)=>String(a.name).localeCompare(String(b.name),'zh-Hant');
 const EXP_CATS=['房租','水電','薪資','包材','運費','平台／手續費','其他'];
 const ls={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}};
 
-let S={products:{},purchases:{},sales:{},expenses:{},customers:{},counts:{},payments:[],payStart:'',payRate:1,revenue:{}};
+let S={products:{},purchases:{},sales:{},expenses:{},customers:{},counts:{},payments:[],payStart:'',payRate:1,payCuts:[],revenue:{}};
 const T=tw();
 const UI={tab:'sell',year:+T.slice(0,4),month:+T.slice(5,7),pDate:T,sDate:T,cDate:T,dashMonth:+T.slice(5,7),drafts:{p:{},s:{},c:{}}};
 let token=ls.get('gb_token'), me=null, loaded=false, busy=0;
@@ -387,14 +387,25 @@ function parsePaste(txt,isRet){
 function payBalance(){
   const start=S.payStart||'';const pays=(S.payments||[]).filter(p=>p.date>=start);
   const on=pays.length>0||!!start;let paid=0,used=0;pays.forEach(p=>paid+=+p.amount||0);
-  const rate=+S.payRate||1;
-  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;for(const l of p.lines||[])used+=(l.type==='ret'?-1:1)*l.qty*l.cost*rate;}
-  return {on,paid,used,balance:paid-used,start,rate};
+  const rate=+S.payRate||1;const per=payPeriods(start,rate);
+  per.forEach(p=>used+=p.closed?p.charge:p.exact);
+  return {on,paid,used,balance:paid-used,start,rate,per};
+}
+/* 結帳期：每個結帳日之前（含）的那一期，照窗口的方式「× 加成後捨去到十位數」；最後一個結帳日之後的照實際金額 */
+function nextDay(d){const x=new Date(d+'T00:00:00Z');x.setUTCDate(x.getUTCDate()+1);return x.toISOString().slice(0,10);}
+function dayNet(p){let v=0;(p.lines||[]).forEach(l=>v+=(l.type==='ret'?-1:1)*l.qty*l.cost);return v;}
+function payPeriods(start,rate){
+  const cuts=(S.payCuts||[]).filter(c=>c>=start).sort();const out=[];let from=start,first=true;
+  const sum=(a,b,incl)=>{let n=0;for(const [d,p] of Object.entries(S.purchases)){if((incl?d>=a:d>a)&&(b==null||d<=b))n+=dayNet(p);}return n;};
+  cuts.forEach(c=>{const net=sum(from,c,first);const exact=net*rate;const charge=(exact<0?-1:1)*Math.floor(Math.abs(exact)/10)*10;out.push({from,to:c,first,net,exact,charge,closed:true});from=c;first=false;});
+  const net=sum(from,null,first);out.push({from,to:null,first,net,exact:net*rate,charge:net*rate,closed:false});
+  return out;
 }
 V.pay=()=>{
   const b=payBalance(),start=b.start;
   const E=[];(S.payments||[]).filter(p=>p.date>=start).forEach(p=>E.push({date:p.date,k:0,pay:+p.amount||0,use:0,text:`付貨款${p.to?'給 '+esc(p.to):''}${p.note?'（'+esc(p.note)+'）':''}`,id:p.id,by:p.by}));
   for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;let n=0,r=0,v=0;(p.lines||[]).forEach(l=>{const s=l.qty*l.cost;if(l.type==='ret'){r++;v-=s;}else{n++;v+=s;}});if(v||n||r)E.push({date:d,k:1,pay:0,use:v*b.rate,text:`進貨 ${n} 項${r?`、退貨 ${r} 項`:''}${b.rate!==1?`（${fmt(v)} × ${b.rate}）`:''}`,d});}
+  b.per.filter(p=>p.closed).forEach(p=>{const adj=p.exact-p.charge;E.push({date:p.to,k:2,pay:adj,use:0,cut:true,text:`<b>結帳</b> ${(p.first?p.from:nextDay(p.from)).slice(5).replace('-','/')}～${p.to.slice(5).replace('-','/')}：進貨 ${fmt(p.net)} × ${b.rate} ＝ <b>${fmt(p.charge)}</b>（捨去 ${adj.toFixed(2)}）`});});
   E.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.k-b.k);let run=0;E.forEach(e=>{run+=e.pay-e.use;e.bal=run;});
   const shown=E.slice().reverse();
   const lastTo=(S.payments||[]).length?S.payments[S.payments.length-1].to:'';
@@ -419,13 +430,18 @@ V.pay=()=>{
       <div><b>貨款起算日</b><div class="mut" style="font-size:12.5px">從這天開始的付款與進貨才計入餘額。例如媽媽 9/1 開始預付，就設 9/1，之前的舊進貨不會被扣。</div></div>
       <div class="row"><input type="date" id="yStart" value="${esc(start)}"><button class="b" data-act="ystart">設定</button></div>
     </div>
+    <div class="panel stack" style="gap:10px">
+      <div><b>結帳日</b><div class="mut" style="font-size:12.5px">每次跟窗口結帳的那天加一筆。每一期的貨款會跟窗口一樣「進貨 × 加成倍率後捨去到十位數」；最後一次結帳之後的進貨先照實際金額算，等下次結帳再捨去。</div></div>
+      <div class="row">${(S.payCuts||[]).map(c=>`<span class="pill in">${c.slice(5).replace('-','/')} <button class="x" data-act="ycutdel" data-d="${c}" aria-label="刪除結帳日" style="padding:0 2px">✕</button></span>`).join('')||'<span class="mut">尚未設定</span>'}</div>
+      <div class="row"><input type="date" id="yCut" value="${T}"><button class="b" data-act="ycutadd">新增結帳日</button></div>
+    </div>
     <div class="panel row" style="justify-content:space-between">
       <div><b>貨款加成倍率</b><div class="mut" style="font-size:12.5px">窗口收貨款時在進貨金額上另外加的比例。例如進貨 218,371 × 1.022 ＝ 223,175，就填 1.022；沒有加成就填 1。</div></div>
       <div class="row"><input id="yRate" inputmode="decimal" value="${esc(b.rate)}" style="width:90px"><button class="b" data-act="yrate">設定</button></div>
     </div>
     <div><h3>貨款明細</h3>
     ${shown.length?`<div class="tw" style="max-height:60vh"><table><thead><tr><th>日期</th><th>摘要</th><th class="n">付款</th><th class="n">進貨扣抵</th><th class="n">餘額</th><th></th></tr></thead><tbody>
-    ${shown.map(e=>`<tr ${e.k?`class="click" data-act="ygo" data-d="${e.d}"`:''}><td>${e.date.slice(5).replace('-','/')}（${wk(e.date)}）</td><td class="wrap">${e.text}</td><td class="n pos">${e.pay?fmt(e.pay):''}</td><td class="n">${e.use?fmt(e.use):''}</td><td class="n ${e.bal<0?'neg':''}"><b>${fmt(e.bal)}</b></td><td>${e.k?'':`<button class="x" data-act="ydel" data-id="${e.id}">刪除</button>`}</td></tr>`).join('')}
+    ${shown.map(e=>`<tr ${e.k?`class="click" data-act="ygo" data-d="${e.d}"`:''}><td>${e.date.slice(5).replace('-','/')}（${wk(e.date)}）</td><td class="wrap">${e.text}</td><td class="n pos">${e.cut?(e.pay?'+'+e.pay.toFixed(2):''):(e.pay?fmt(e.pay):'')}</td><td class="n">${e.use?fmt(e.use):''}</td><td class="n ${e.bal<0?'neg':''}"><b>${fmt(e.bal)}</b></td><td>${e.k?'':`<button class="x" data-act="ydel" data-id="${e.id}">刪除</button>`}</td></tr>`).join('')}
     </tbody></table></div>`:'<p class="mut">還沒有付款紀錄。先設定起算日，再登錄第一筆付款。</p>'}</div>
   </div>`;
 };
@@ -659,6 +675,8 @@ $('#view').addEventListener('click',async e=>{
   else if(a==='yadd'){const amount=+$('#yAmt').value,date=$('#yDate').value;if(!amount||!date){toast('請輸入日期和金額');return;}
     await doAndRender('addPayment',{date,amount,to:$('#yTo').value.trim(),note:$('#yNote').value.trim()},'已登錄付款 '+fmt(amount));}
   else if(a==='ydel'){if(!armed(b))return;await doAndRender('deletePayment',{id:b.dataset.id},'已刪除付款');}
+  else if(a==='ycutadd'){const v=$('#yCut').value;if(!v){toast('請選日期');return;}await doAndRender('setPayCuts',{cuts:[...(S.payCuts||[]),v]},'已新增結帳日 '+v.slice(5).replace('-','/'));}
+  else if(a==='ycutdel'){if(!armed(b))return;await doAndRender('setPayCuts',{cuts:(S.payCuts||[]).filter(c=>c!==b.dataset.d)},'已刪除結帳日');}
   else if(a==='yrate'){const r=+$('#yRate').value;if(!(r>0)){toast('請填數字，例如 1.022');return;}await doAndRender('setPayRate',{rate:r},'已設定加成倍率 '+r);}
   else if(a==='ystart'){await doAndRender('setPayStart',{date:$('#yStart').value},'已設定起算日');}
   else if(a==='ygo'){UI.pDate=b.dataset.d;UI.year=+b.dataset.d.slice(0,4);UI.month=+b.dataset.d.slice(5,7);UI.tab='buy';render();window.scrollTo(0,0);}
