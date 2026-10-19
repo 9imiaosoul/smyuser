@@ -284,7 +284,7 @@ V.dash=()=>{
       <div class="kpi"><div class="l">年毛利率</div><div class="v">${pct(Y.gp,Y.rev)}</div></div>
       <div class="kpi"><div class="l">年支出</div><div class="v">${fmt(Y.spend)}</div></div>
       <div class="kpi"><div class="l">年收支結餘</div><div class="v ${Y.net<0?'neg':'pos'}">${fmt(Y.net)}</div></div>
-      ${PB.on?`<div class="kpi click" data-act="gopay" style="cursor:pointer"><div class="l">貨款餘額</div><div class="v ${PB.balance<0?'neg':''}">${fmt(PB.balance)}</div></div>`:''}
+      ${PB.on?`<div class="kpi click" data-act="gopay" style="cursor:pointer"><div class="l">${PB.balance<0?'尚欠貨款':'預付貨款剩餘'}</div><div class="v ${PB.balance<0?'neg':'pos'}">${fmt(Math.abs(PB.balance))}</div></div>`:''}
     </div>
     ${anyEst?`<p class="mut" style="font-size:12.5px;margin:0">「估」＝那天只輸入營業總額、沒有登錄品項，銷貨成本是用進貨商品的平均毛利率 ${EMs} 估算的。品項登錄越完整，毛利越準。</p>`:''}
     <div class="panel chart">
@@ -316,7 +316,7 @@ function pDraft(d){if(!UI.drafts.p[d]){const doc=S.purchases[d];UI.drafts.p[d]={
 function lineInfo(l){const pid=findPid(l.name);const p=pid?S.products[pid]:null;const price=p?(+p.price||0):0;const cost=+l.cost||0;return {price,unitGp:price?price-cost:null};}
 function pTotals(dr){let tin=0,tret=0,rev=0,gp=0,nop=0;dr.lines.forEach(l=>{const q=+l.qty||0,s=q*(+l.cost||0);if(l.type==='ret'){tret+=s;return;}tin+=s;if(!q)return;const i=lineInfo(l);if(i.price){rev+=q*i.price;gp+=q*i.unitGp;}else if(l.name)nop++;});return {tin,tret,rev,gp,nop};}
 function pTotHtml(dr){const t=pTotals(dr);const bal=payBalance();
-  return `<span>進貨 <b>${fmt(t.tin)}</b></span><span>退貨 <b>${fmt(t.tret)}</b></span><span>淨額 <b>${fmt(t.tin-t.tret)}</b></span><span class="mut">｜</span><span>預估售價總額 <b>${fmt(t.rev)}</b></span><span>預估毛利 <b class="${t.gp<0?'neg':''}">${fmt(t.gp)}</b>${t.rev?`（${pct(t.gp,t.rev)}）`:''}</span>${t.nop?`<span class="pill warn">${t.nop} 項未設售價</span>`:''}${bal.on?`<span class="mut">｜</span><span>目前貨款餘額 <b class="${bal.balance<0?'neg':''}">${fmt(bal.balance)}</b></span>`:''}`;}
+  return `<span>進貨 <b>${fmt(t.tin)}</b></span><span>退貨 <b>${fmt(t.tret)}</b></span><span>淨額 <b>${fmt(t.tin-t.tret)}</b></span><span class="mut">｜</span><span>預估售價總額 <b>${fmt(t.rev)}</b></span><span>預估毛利 <b class="${t.gp<0?'neg':''}">${fmt(t.gp)}</b>${t.rev?`（${pct(t.gp,t.rev)}）`:''}</span>${t.nop?`<span class="pill warn">${t.nop} 項未設售價</span>`:''}${bal.on?`<span class="mut">｜</span><span>${bal.balance<0?'尚欠貨款':'預付貨款剩餘'} <b class="${bal.balance<0?'neg':''}">${fmt(Math.abs(bal.balance))}</b></span>`:''}`;}
 V.buy=()=>{
   const Y=UI.year,D=dayAgg();
   const mt=Array.from({length:12},(_,i)=>{const ym=Y+'-'+pad(i+1);let a=0,r=0;for(const [d,x] of Object.entries(D))if(d.startsWith(ym)){a+=x.pin;r+=x.pret;}return {m:i+1,a,r};});
@@ -388,23 +388,21 @@ function payBalance(){
   const start=S.payStart||'';const pays=(S.payments||[]).filter(p=>p.date>=start);
   const on=pays.length>0||!!start;let paid=0,used=0;pays.forEach(p=>paid+=+p.amount||0);
   const rate=+S.payRate||1;
-  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;let v=0;for(const l of p.lines||[])v+=(l.type==='ret'?-1:1)*l.qty*l.cost;used+=payDay(v,rate);}
+  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;for(const l of p.lines||[])used+=(l.type==='ret'?-1:1)*l.qty*l.cost*rate;}
   return {on,paid,used,balance:paid-used,start,rate};
 }
-/* 每天的進貨淨額 × 加成倍率，小數無條件捨去（跟窗口二姐的算法一致） */
-function payDay(v,rate){return Math.floor(v*rate+1e-6);}
 V.pay=()=>{
   const b=payBalance(),start=b.start;
   const E=[];(S.payments||[]).filter(p=>p.date>=start).forEach(p=>E.push({date:p.date,k:0,pay:+p.amount||0,use:0,text:`付貨款${p.to?'給 '+esc(p.to):''}${p.note?'（'+esc(p.note)+'）':''}`,id:p.id,by:p.by}));
-  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;let n=0,r=0,v=0;(p.lines||[]).forEach(l=>{const s=l.qty*l.cost;if(l.type==='ret'){r++;v-=s;}else{n++;v+=s;}});if(v||n||r)E.push({date:d,k:1,pay:0,use:payDay(v,b.rate),text:`進貨 ${n} 項${r?`、退貨 ${r} 項`:''}${b.rate!==1?`（${fmt(v)} × ${b.rate}）`:''}`,d});}
+  for(const [d,p] of Object.entries(S.purchases)){if(d<start)continue;let n=0,r=0,v=0;(p.lines||[]).forEach(l=>{const s=l.qty*l.cost;if(l.type==='ret'){r++;v-=s;}else{n++;v+=s;}});if(v||n||r)E.push({date:d,k:1,pay:0,use:v*b.rate,text:`進貨 ${n} 項${r?`、退貨 ${r} 項`:''}${b.rate!==1?`（${fmt(v)} × ${b.rate}）`:''}`,d});}
   E.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.k-b.k);let run=0;E.forEach(e=>{run+=e.pay-e.use;e.bal=run;});
   const shown=E.slice().reverse();
   const lastTo=(S.payments||[]).length?S.payments[S.payments.length-1].to:'';
   return `<h2>貨款</h2>
-  <p class="lede">先付給廠商窗口的貨款記在這裡；每天的進貨淨額（進貨－退貨）會自動扣抵。餘額是負數代表進貨已經超過付出去的貨款，要再補付。</p>
+  <p class="lede">先付給廠商窗口的貨款記在這裡；每天的進貨淨額（進貨－退貨）會自動扣抵。上方會顯示「尚欠貨款」（進貨已超過付出去的錢，要補付）或「預付貨款剩餘」（還有錢放在窗口那邊）。下方明細的「餘額」欄，負數＝尚欠、正數＝預付剩餘。</p>
   <div class="stack">
     <div class="kpis">
-      <div class="kpi"><div class="l">目前貨款餘額</div><div class="v ${b.balance<0?'neg':'pos'}">${fmt(b.balance)}</div></div>
+      <div class="kpi"><div class="l">${b.balance<0?'尚欠貨款（要補付）':'預付貨款剩餘'}</div><div class="v ${b.balance<0?'neg':'pos'}">${fmt(Math.abs(b.balance))}</div></div>
       <div class="kpi"><div class="l">已付貨款${start?'（'+start.slice(5).replace('-','/')+' 起）':''}</div><div class="v">${fmt(b.paid)}</div></div>
       <div class="kpi"><div class="l">已扣抵進貨${b.rate!==1?'（含加成 '+((b.rate-1)*100).toFixed(1)+'%）':''}</div><div class="v">${fmt(b.used)}</div></div>
     </div>
@@ -422,7 +420,7 @@ V.pay=()=>{
       <div class="row"><input type="date" id="yStart" value="${esc(start)}"><button class="b" data-act="ystart">設定</button></div>
     </div>
     <div class="panel row" style="justify-content:space-between">
-      <div><b>貨款加成倍率</b><div class="mut" style="font-size:12.5px">窗口收貨款時在進貨金額上另外加的比例。例如進貨 218,371 × 1.022 ＝ 223,175，就填 1.022；沒有加成就填 1。每天的扣抵金額小數無條件捨去。</div></div>
+      <div><b>貨款加成倍率</b><div class="mut" style="font-size:12.5px">窗口收貨款時在進貨金額上另外加的比例。例如進貨 218,371 × 1.022 ＝ 223,175，就填 1.022；沒有加成就填 1。</div></div>
       <div class="row"><input id="yRate" inputmode="decimal" value="${esc(b.rate)}" style="width:90px"><button class="b" data-act="yrate">設定</button></div>
     </div>
     <div><h3>貨款明細</h3>
